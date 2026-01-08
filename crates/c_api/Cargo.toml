@@ -13,3 +13,6 @@ crate-type = ["staticlib"]
 mayon = { path = "../mayon" }
 
 # workspace crates
+
+[build-dependencies]
+cbindgen = "0.29.2"
