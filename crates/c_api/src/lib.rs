@@ -2,8 +2,11 @@
 
 mod conversions;
 mod errors;
+mod fallible_result;
 
 use core::ffi::c_char;
+
+use fallible_result::FallibleResult;
 
 mod rs {
     pub(super) use mayon::{
@@ -64,15 +67,13 @@ pub struct Instance(usize);
 pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     param: *const VulkanBackendParams,
     out_instance: *mut Instance,
-) -> i32 {
+) -> FallibleResult {
     if out_instance.is_null() {
-        return -1;
+        return errors::set_null_pointer_arg(c"out_instance");
     }
 
     let Some(param) = param.as_ref() else {
-        errors::set_null_pointer_arg(c"param");
-
-        return -1;
+        return errors::set_null_pointer_arg(c"param");
     };
 
     let rust_params = rs::VulkanBackendParams {
@@ -86,12 +87,9 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         Ok(instance) => {
             out_instance.write(instance.into());
 
-            0
+            errors::set_ok()
         }
-        Err(err) => {
-            errors::set_vulkan_error(err);
-            -1
-        }
+        Err(err) => errors::set_vulkan_error(err),
     }
 }
 
