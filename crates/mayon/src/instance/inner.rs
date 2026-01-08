@@ -4,6 +4,7 @@ use core::{
     ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering},
 };
+use std::ops::{Deref, DerefMut};
 use std::sync::atomic::fence;
 
 use crate::backends::Backend;
@@ -45,6 +46,16 @@ where
 
             Self(buffer.cast())
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn backend(&self) -> &dyn Backend {
+        unsafe { self.0.as_ref().backend.deref() }
+    }
+
+    #[inline(always)]
+    pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
+        unsafe { self.0.as_mut().backend.deref_mut() }
     }
 }
 
