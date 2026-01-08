@@ -2,18 +2,19 @@ use core::{
     alloc::{Allocator, Layout},
     ptr::NonNull,
 };
+use std::alloc::handle_alloc_error;
 
-pub(super) unsafe fn store_zeroed<A, V>(allocator: &A, value: V) -> NonNull<V>
+use crate::backends::Backend;
+
+#[inline(always)]
+pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where
     A: Allocator,
 {
     let layout = Layout::new::<V>();
 
-    let Ok(ptr) = allocator
-        .allocate_zeroed(layout)
-        .map(NonNull::<_>::cast::<V>)
-    else {
-        std::alloc::handle_alloc_error(layout);
+    let Ok(ptr) = allocator.allocate(layout).map(NonNull::<_>::cast::<V>) else {
+        handle_alloc_error(layout);
     };
 
     unsafe {
@@ -21,4 +22,38 @@ where
     }
 
     ptr
+}
+
+pub struct BackendBox {
+    ptr: NonNull<dyn Backend>,
+    layout: Layout,
+}
+
+impl BackendBox {
+    #[inline]
+    pub unsafe fn new_in<A, B>(allocator: &A, value: B) -> Self
+    where
+        A: Allocator,
+        B: Backend + 'static,
+    {
+        let layout = Layout::new::<B>();
+
+        let Ok(ptr) = allocator.allocate(layout).map(NonNull::<_>::cast::<B>) else {
+            handle_alloc_error(layout);
+        };
+
+        unsafe { ptr.write(value) };
+
+        Self { ptr, layout }
+    }
+
+    #[inline]
+    pub fn drop<A>(&self, allocator: A)
+    where
+        A: Allocator,
+    {
+        unsafe {
+            allocator.deallocate(self.ptr.cast(), self.layout);
+        }
+    }
 }

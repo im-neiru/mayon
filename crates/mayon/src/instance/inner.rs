@@ -2,14 +2,14 @@ use core::{alloc::Allocator, mem::MaybeUninit, ptr::NonNull, sync::atomic::Atomi
 
 use crate::backends::Backend;
 
-use super::alloc::store_zeroed;
+use super::alloc::{BackendBox, allocate};
 
 pub(crate) struct Inner<A>
 where
     A: Allocator,
 {
     allocator: A,
-    backend: NonNull<dyn Backend>,
+    backend: BackendBox,
 
     ref_count: AtomicUsize,
 }
@@ -27,9 +27,9 @@ where
         B: Backend + 'static,
     {
         unsafe {
-            let backend = store_zeroed(&allocator, backend);
+            let backend = BackendBox::new_in(&allocator, backend);
 
-            let mut buffer = store_zeroed(&allocator, MaybeUninit::<Inner<A>>::uninit());
+            let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A>>::uninit());
 
             buffer.as_mut().write(Inner {
                 allocator,
@@ -37,7 +37,21 @@ where
                 ref_count: AtomicUsize::new(1),
             });
 
-            Self(backend.cast())
+            Self(buffer.cast())
+        }
+    }
+}
+
+impl<A> Drop for ArcInner<A>
+where
+    A: Allocator,
+{
+    fn drop(&mut self) {
+        unsafe {
+            let Self(this) = self;
+            let allocator = &this.as_ref().allocator;
+
+            this.as_ref().backend.drop(allocator)
         }
     }
 }
