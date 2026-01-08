@@ -1,10 +1,10 @@
+use crate::backends::Backend;
 use core::{
     alloc::{Allocator, Layout},
     ptr::NonNull,
 };
 use std::alloc::handle_alloc_error;
-
-use crate::backends::Backend;
+use std::ops::{Deref, DerefMut};
 
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
@@ -65,5 +65,21 @@ impl BackendBox {
         unsafe {
             allocator.deallocate(self.ptr.cast(), self.layout);
         }
+    }
+}
+
+impl Deref for BackendBox {
+    type Target = dyn Backend + Send + Sync;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.ptr.as_ref() }
+    }
+}
+
+impl DerefMut for BackendBox {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.ptr.as_mut() }
     }
 }
