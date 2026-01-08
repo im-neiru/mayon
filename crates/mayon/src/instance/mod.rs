@@ -1,16 +1,17 @@
+mod alloc;
+mod inner;
+
 use std::{alloc::Allocator, alloc::Global, sync::Arc};
 
 use crate::backends::{Backend, CreateBackend};
+
+use inner::Inner;
 
 pub struct Instance<A: Allocator = Global>
 where
     A: Allocator,
 {
     backend: Arc<dyn Backend + 'static, A>,
-}
-
-pub(crate) struct Inner {
-    backend: dyn Backend + Send + Sync,
 }
 
 impl<A: Allocator> Instance<A> {
