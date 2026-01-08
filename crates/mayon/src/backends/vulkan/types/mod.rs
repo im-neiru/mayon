@@ -11,3 +11,5 @@ pub(super) use instance::Instance;
 pub(super) use instance_create_info::InstanceCreateInfo;
 pub(super) use result::VkResult;
 pub(super) use structure_type::StructureType;
+
+pub use result::ReturnCode;

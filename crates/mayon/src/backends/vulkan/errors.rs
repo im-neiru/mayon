@@ -3,14 +3,21 @@ use core::panic::Location;
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
 pub struct Error {
-    kind: ErrorKind,
-    location: &'static Location<'static>,
+    pub(crate) kind: ErrorKind,
+    #[cfg(feature = "error_location")]
+    pub(crate) location: &'static Location<'static>,
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 pub enum ErrorKind {
     #[error("Failed to load Vulkan")]
     VulkanLoad,
+
+    #[error("{function_name} failed: {code}")]
+    VulkanFunctionError {
+        function_name: &'static str,
+        code: super::ReturnCode,
+    },
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
