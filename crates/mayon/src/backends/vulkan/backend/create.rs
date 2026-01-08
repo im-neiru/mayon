@@ -2,18 +2,20 @@ use core::ffi::CStr;
 
 use crate::backends::{
     CreateBackend,
-    vulkan::{Error, VulkanBackend, backend::FnTable},
+    vulkan::{Error, VulkanBackend, backend::FnTable, types::ApplicationInfo},
 };
 
 impl<'s> CreateBackend<'s> for VulkanBackend {
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
-    fn create(_: Self::Params) -> Result<Self, Self::Error>
+    fn create(params: Self::Params) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
         let _fns = FnTable::global()?;
+
+        let _application_info = ApplicationInfo::new(params);
 
         Ok(Self {})
     }
