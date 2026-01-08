@@ -14,17 +14,23 @@ FetchContent_MakeAvailable(Corrosion)
 set(CORROSION_RUST_TOOLCHAIN "nightly-x86_64-pc-windows-msvc")
 
 corrosion_import_crate(
-        MANIFEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/crates/c-api/Cargo.toml"
+        MANIFEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml"
+        CRATES mayon_c_api
 )
 
 set(MAYON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/crates/c-api/include")
 
-target_include_directories(mayon_c_api PUBLIC ${MAYON_INCLUDE_DIR})
-
-install(TARGETS mayon_c_api
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-)
-
 install(DIRECTORY "${MAYON_INCLUDE_DIR}/" DESTINATION include)
+
+set(RUST_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/corrosion-src/build/cargo_target/debug")
+set(RUST_LIB_NAME "mayon_c_api")
+
+if(WIN32) # WindowOS
+    set(LIB_FILE "${RUST_BUILD_DIR}/${RUST_LIB_NAME}.dll")
+elseif(APPLE) # MacOS
+    set(LIB_FILE "${RUST_BUILD_DIR}/lib${RUST_LIB_NAME}.dylib")
+else() # LinuxOS
+    set(LIB_FILE "${RUST_BUILD_DIR}/lib${RUST_LIB_NAME}.so")
+endif()
+
+install(FILES "${LIB_FILE}" DESTINATION lib)
