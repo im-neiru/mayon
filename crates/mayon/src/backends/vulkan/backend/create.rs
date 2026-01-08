@@ -95,6 +95,7 @@ impl<'s> VulkanBackendParams<'s> {
     }
 }
 
+#[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct VulkanVersion {
     pub major: u32,
