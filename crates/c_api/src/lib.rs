@@ -55,3 +55,15 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         Err(_) => -1,
     }
 }
+
+#[unsafe(no_mangle)]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
+    let Some(instance) = (unsafe { instance.as_mut() }).map(core::ops::DerefMut::deref_mut) else {
+        return;
+    };
+
+    unsafe {
+        core::ptr::drop_in_place(instance);
+    }
+}

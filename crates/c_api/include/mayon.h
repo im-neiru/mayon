@@ -30,6 +30,8 @@ extern "C" {
 int32_t mayon_new_instance_on_vulkan(const struct VulkanBackendParams *param,
                                      struct Instance *out_instance);
 
+void mayon_drop_instance(struct Instance *instance);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
