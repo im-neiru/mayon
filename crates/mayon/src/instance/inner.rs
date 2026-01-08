@@ -1,8 +1,13 @@
-use crate::backends::Backend;
-use core::{alloc::Allocator, mem::MaybeUninit, ptr::NonNull, sync::atomic::AtomicUsize};
-use std::sync::atomic::Ordering::Relaxed;
+use core::{
+    alloc::Allocator,
+    mem::MaybeUninit,
+    ptr::NonNull,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+use std::sync::atomic::fence;
 
 use super::alloc::{BackendBox, allocate, deallocate};
+use crate::backends::Backend;
 
 pub(crate) struct Inner<A>
 where
@@ -49,7 +54,9 @@ where
     fn clone(&self) -> Self {
         const MAX_REFCOUNT: usize = (isize::MAX) as _;
 
-        let old_count = unsafe { self.0.as_ref() }.ref_count.fetch_add(1, Relaxed);
+        let old_count = unsafe { self.0.as_ref() }
+            .ref_count
+            .fetch_add(1, Ordering::Relaxed);
 
         if old_count >= MAX_REFCOUNT {
             std::process::abort();
@@ -65,6 +72,12 @@ where
 {
     fn drop(&mut self) {
         unsafe {
+            if self.0.as_ref().ref_count.fetch_sub(1, Ordering::Release) != 1 {
+                return;
+            }
+
+            fence(Ordering::Acquire);
+
             let Self(this) = self;
             let allocator = &this.as_ref().allocator;
 
