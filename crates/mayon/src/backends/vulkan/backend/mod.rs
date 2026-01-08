@@ -1,6 +1,6 @@
 mod create;
 
-pub use create::VulkanBackendParams;
+pub use create::{VulkanBackendParams, VulkanVersion};
 
 use crate::backends::vulkan::fn_table::FnTable;
 
