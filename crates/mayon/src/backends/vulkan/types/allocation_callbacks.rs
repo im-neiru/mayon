@@ -25,10 +25,10 @@ impl<'a, A> AllocationCallbacks<'a, A>
 where
     A: Allocator,
 {
-    pub(crate) fn new(allocator: NonNull<A>) -> Self {
+    pub(crate) fn new(allocator: *const A) -> Self {
         Self {
             // TODO: redirect allocations to allocator
-            user_data: allocator.as_ptr().cast(),
+            user_data: allocator.cast(),
             fn_allocation: None,
             fn_reallocation: None,
             fn_free: None,

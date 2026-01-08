@@ -1,19 +1,23 @@
-use core::ffi::CStr;
-
 use crate::backends::{
     CreateBackend,
     vulkan::{
         Error, VulkanBackend,
         backend::FnTable,
-        types::{ApplicationInfo, InstanceCreateInfo},
+        types::{AllocationCallbacks, ApplicationInfo, InstanceCreateInfo},
     },
 };
+use core::ffi::CStr;
+use std::alloc::Allocator;
+use std::ptr::NonNull;
 
-impl<'s> CreateBackend<'s> for VulkanBackend {
+impl<'s, A> CreateBackend<'s, A> for VulkanBackend
+where
+    A: Allocator,
+{
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
-    fn create(params: Self::Params) -> Result<Self, Self::Error>
+    fn create(allocator: &A, params: Self::Params) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
@@ -25,6 +29,8 @@ impl<'s> CreateBackend<'s> for VulkanBackend {
             &[c"VK_LAYER_KHRONOS_validation".as_ptr()],
             &[c"VK_KHR_surface".as_ptr()],
         );
+
+        let allocation_callbacks = AllocationCallbacks::new(allocator);
 
         Ok(Self {})
     }
