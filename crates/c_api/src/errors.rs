@@ -1,5 +1,4 @@
-use core::cell::RefCell;
-use core::ffi::CStr;
+use core::{cell::RefCell, ffi::CStr};
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<Error>> = RefCell::new(None);
@@ -9,15 +8,36 @@ pub(crate) enum Error {
     NullPointerArg {
         name: &'static CStr,
     },
+    FailedBackendLoad {
+        name: &'static CStr,
+    },
     VulkanError {
-        error: mayon::backends::vulkan::Error,
+        function_name: &'static str,
+        return_code: i32,
     },
 }
 
-pub(crate) fn set_null_pointer_arg(name: &'static CStr) {
-    LAST_ERROR.set(Some(Error::NullPointerArg { name }))
+#[inline]
+pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> i32 {
+    LAST_ERROR.set(Some(Error::NullPointerArg { name }));
+
+    -1
 }
 
-pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) {
-    LAST_ERROR.set(Some(Error::VulkanError { error }))
+#[inline]
+pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> i32 {
+    match error.kind() {
+        mayon::backends::vulkan::ErrorKind::VulkanLoad => {
+            LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
+        }
+        mayon::backends::vulkan::ErrorKind::VulkanFunctionError {
+            function_name,
+            code,
+        } => LAST_ERROR.set(Some(Error::VulkanError {
+            function_name,
+            return_code: code as i32,
+        })),
+    }
+
+    -1
 }
