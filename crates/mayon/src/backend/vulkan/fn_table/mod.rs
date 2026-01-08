@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 mod loader;
 
 use libloading::Library;
@@ -8,8 +10,14 @@ pub struct FnTable {
     library: Option<Library>,
 }
 
+static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
+
 impl FnTable {
-    pub(crate) fn new() -> super::Result<Self> {
+    pub(in crate::backend) fn global() -> super::Result<&'static Self> {
+        FN_TABLE.get_or_try_init(Self::new)
+    }
+
+    fn new() -> super::Result<Self> {
         match unsafe { loader::vulkan_lib() } {
             Ok(library) => Ok(Self {
                 library: Some(library),
