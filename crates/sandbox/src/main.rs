@@ -1,4 +1,4 @@
-use mayon::backend::vulkan::{VulkanBackend, VulkanBackendParams};
+use mayon::backends::vulkan::{VulkanBackend, VulkanBackendParams};
 
 fn main() {
     let instance = mayon::Instance::new::<'static, VulkanBackend>(

@@ -1,7 +1,7 @@
 #![feature(allocator_api)]
 #![feature(once_cell_try)]
 
-pub mod backend;
+pub mod backends;
 mod instance;
 
 pub use instance::Instance;

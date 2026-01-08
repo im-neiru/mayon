@@ -1,4 +1,4 @@
-use crate::backend::{
+use crate::backends::{
     vulkan::{backend::FnTable, Error, VulkanBackend},
     CreateBackend,
 };

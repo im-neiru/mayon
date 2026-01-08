@@ -4,7 +4,7 @@ mod loader;
 
 use libloading::Library;
 
-use crate::backend::vulkan::ErrorKind;
+use crate::backends::vulkan::ErrorKind;
 
 pub struct FnTable {
     library: Option<Library>,
@@ -13,7 +13,7 @@ pub struct FnTable {
 static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
 
 impl FnTable {
-    pub(in crate::backend) fn global() -> super::Result<&'static Self> {
+    pub(in crate::backends) fn global() -> super::Result<&'static Self> {
         FN_TABLE.get_or_try_init(Self::new)
     }
 

@@ -1,6 +1,6 @@
 use std::{alloc::Allocator, alloc::Global, sync::Arc};
 
-use crate::backend::{Backend, CreateBackend};
+use crate::backends::{Backend, CreateBackend};
 
 pub struct Instance<A: Allocator = Global>
 where
