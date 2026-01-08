@@ -2,7 +2,7 @@ use core::{alloc::Allocator, mem::MaybeUninit, ptr::NonNull, sync::atomic::Atomi
 
 use crate::backends::Backend;
 
-use super::alloc::{BackendBox, allocate};
+use super::alloc::{BackendBox, allocate, deallocate};
 
 pub(crate) struct Inner<A>
 where
@@ -51,7 +51,9 @@ where
             let Self(this) = self;
             let allocator = &this.as_ref().allocator;
 
-            this.as_ref().backend.drop(allocator)
+            this.as_ref().backend.drop(allocator);
+
+            deallocate(allocator, *this);
         }
     }
 }
