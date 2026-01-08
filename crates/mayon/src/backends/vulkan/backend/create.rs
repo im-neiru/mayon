@@ -2,7 +2,11 @@ use core::ffi::CStr;
 
 use crate::backends::{
     CreateBackend,
-    vulkan::{Error, VulkanBackend, backend::FnTable, types::ApplicationInfo},
+    vulkan::{
+        Error, VulkanBackend,
+        backend::FnTable,
+        types::{ApplicationInfo, InstanceCreateInfo},
+    },
 };
 
 impl<'s> CreateBackend<'s> for VulkanBackend {
@@ -15,7 +19,12 @@ impl<'s> CreateBackend<'s> for VulkanBackend {
     {
         let _fns = FnTable::global()?;
 
-        let _application_info = ApplicationInfo::new(params);
+        let application_info = ApplicationInfo::new(params);
+        let _instance = InstanceCreateInfo::new(
+            &application_info,
+            &[c"VK_LAYER_KHRONOS_validation".as_ptr()],
+            &[c"VK_KHR_surface".as_ptr()],
+        );
 
         Ok(Self {})
     }
