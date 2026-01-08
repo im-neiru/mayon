@@ -5,8 +5,8 @@ mod errors;
 mod fallible_result;
 
 use core::ffi::c_char;
-
 use fallible_result::FallibleResult;
+use std::ffi::c_void;
 
 mod rs {
     pub(super) use mayon::{
@@ -105,6 +105,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 /// Instances are internally reference-counted. Releasing the same instance
 /// multiple times may cause unintended deallocation once the reference count
 /// reaches zero.
+///
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
@@ -113,4 +114,33 @@ pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
     };
 
     core::ptr::drop_in_place(instance);
+}
+
+/// Returns a pointer to the last error message for the current thread.
+///
+/// Each thread has its own last-error message; calls on one thread do not
+/// affect the message seen on another thread.
+///
+/// @return A pointer to a null-terminated UTF-8 C string (`const char*`).
+///         Returns NULL if no error is set.
+///
+/// @note
+/// - Do not free the returned string.
+/// - The pointer is valid until the next error is set on the same thread.
+/// - Thread-safe: only returns the error for the calling thread.
+///
+/// @example
+/// struct Instance instance;
+/// enum FallibleResult result = mayon_new_instance_on_vulkan(&params, &instance);
+///
+/// if (result != Ok) {
+///     const char* msg = mayon_last_error_message();
+///     printf("Error: %s\n", msg ? msg : "Unknown");
+/// }
+///
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn mayon_last_error_message() -> *const c_char {
+    errors::get_message()
 }

@@ -1,4 +1,4 @@
-use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::null};
+use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit};
 
 use crate::backends::{
     CreateBackend,
