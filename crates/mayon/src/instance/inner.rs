@@ -1,6 +1,8 @@
+use core::{alloc::Allocator, mem::MaybeUninit, ptr::NonNull, sync::atomic::AtomicUsize};
+
 use crate::backends::Backend;
-use core::{alloc::Allocator, ptr::NonNull, sync::atomic::AtomicUsize};
-use std::mem::MaybeUninit;
+
+use super::alloc::store_zeroed;
 
 pub(crate) struct Inner<A>
 where
@@ -12,26 +14,30 @@ where
     ref_count: AtomicUsize,
 }
 
-impl<A> Inner<A>
+pub(crate) struct ArcInner<A>(NonNull<Inner<A>>)
+where
+    A: Allocator;
+
+impl<A> ArcInner<A>
 where
     A: Allocator,
 {
-    pub(super) unsafe fn new<B>(allocator: A, backend: B) -> NonNull<Self>
+    pub(super) unsafe fn new<B>(allocator: A, backend: B) -> Self
     where
         B: Backend + 'static,
     {
         unsafe {
-            let backend = Self::store_zeroed(&allocator, backend);
+            let backend = store_zeroed(&allocator, backend);
 
-            let mut buffer = Self::store_zeroed(&allocator, MaybeUninit::<Self>::uninit());
+            let mut buffer = store_zeroed(&allocator, MaybeUninit::<Inner<A>>::uninit());
 
-            buffer.as_mut().write(Self {
+            buffer.as_mut().write(Inner {
                 allocator,
                 backend,
                 ref_count: AtomicUsize::new(1),
             });
 
-            backend.cast()
+            Self(backend.cast())
         }
     }
 }
