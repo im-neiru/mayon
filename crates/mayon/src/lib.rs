@@ -1,6 +1,6 @@
 #![feature(allocator_api)]
 
-mod backend;
+pub mod backend;
 mod instance;
 
 pub use instance::Instance;

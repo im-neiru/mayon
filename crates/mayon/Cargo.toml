@@ -3,6 +3,10 @@ name = "mayon"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["error_location"]
+error_location = []
+
 [dependencies]
 libloading = "0.9.0"
 
