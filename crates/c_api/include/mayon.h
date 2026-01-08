@@ -6,6 +6,21 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+enum FallibleResult
+#ifdef __cplusplus
+  : uint16_t
+#endif // __cplusplus
+ {
+  Ok = 0,
+  NullPointerParam = 36865,
+  BackendLoadFailed = 40961,
+  VulkanFunctionError = 45057,
+  UnknownError = 65535,
+};
+#ifndef __cplusplus
+typedef uint16_t FallibleResult;
+#endif // __cplusplus
+
 /**
  * Vulkan version structure.
  */
@@ -68,8 +83,8 @@ extern "C" {
  *
  * On failure, `out_instance` is not written.
  */
-int32_t mayon_new_instance_on_vulkan(const struct VulkanBackendParams *param,
-                                     struct Instance *out_instance);
+FallibleResult mayon_new_instance_on_vulkan(const struct VulkanBackendParams *param,
+                                            struct Instance *out_instance);
 
 /**
  * Releases a Mayon instance.
@@ -84,8 +99,35 @@ int32_t mayon_new_instance_on_vulkan(const struct VulkanBackendParams *param,
  * Instances are internally reference-counted. Releasing the same instance
  * multiple times may cause unintended deallocation once the reference count
  * reaches zero.
+ *
  */
 void mayon_drop_instance(struct Instance *instance);
+
+/**
+ * Returns a pointer to the last error message for the current thread.
+ *
+ * Each thread has its own last-error message; calls on one thread do not
+ * affect the message seen on another thread.
+ *
+ * @return A pointer to a null-terminated UTF-8 C string (`const char*`).
+ *         Returns NULL if no error is set.
+ *
+ * @note
+ * - Do not free the returned string.
+ * - The pointer is valid until the next error is set on the same thread.
+ * - Thread-safe: only returns the error for the calling thread.
+ *
+ * @example
+ * struct Instance instance;
+ * enum FallibleResult result = mayon_new_instance_on_vulkan(&params, &instance);
+ *
+ * if (result != Ok) {
+ *     const char* msg = mayon_last_error_message();
+ *     printf("Error: %s\n", msg ? msg : "Unknown");
+ * }
+ *
+ */
+const char *mayon_last_error_message(void);
 
 #ifdef __cplusplus
 }  // extern "C"
