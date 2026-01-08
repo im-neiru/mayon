@@ -61,6 +61,7 @@ pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> Fallibl
     }
 }
 
+#[inline(always)]
 pub(crate) fn get_message() -> *const c_char {
     LAST_ERROR.with_borrow(|err| {
         let Some(err) = err else {
