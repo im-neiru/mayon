@@ -30,7 +30,7 @@ where
 {
     pub(super) fn new<'s, B>(allocator: A, params: B::Params) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, A> + Send + Sync + 'static,
+        B: Backend + CreateBackend<'s, A> + 'static,
     {
         unsafe {
             let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A>>::uninit());

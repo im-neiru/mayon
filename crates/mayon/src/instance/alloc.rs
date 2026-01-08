@@ -35,7 +35,7 @@ where
 }
 
 pub struct BackendBox {
-    ptr: NonNull<dyn Backend + Send + Sync>,
+    ptr: NonNull<dyn Backend + 'static>,
     layout: Layout,
 }
 
@@ -44,7 +44,7 @@ impl BackendBox {
     pub unsafe fn new_in<A, B>(allocator: &A, value: B) -> Self
     where
         A: Allocator,
-        B: Backend + Send + Sync + 'static,
+        B: Backend + 'static,
     {
         let layout = Layout::new::<B>();
 
@@ -69,7 +69,7 @@ impl BackendBox {
 }
 
 impl Deref for BackendBox {
-    type Target = dyn Backend + Send + Sync;
+    type Target = dyn Backend + 'static;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {

@@ -16,7 +16,7 @@ where
 impl<A: Allocator> Instance<A> {
     pub fn new_in<'s, B>(params: B::Params, allocator: A) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, A> + Send + Sync + 'static,
+        B: Backend + CreateBackend<'s, A> + 'static,
     {
         let arc = ArcInner::new::<'s, B>(allocator, params)?;
 
@@ -28,7 +28,7 @@ impl Instance<Global> {
     #[inline]
     pub fn new<'s, B>(params: B::Params) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, Global> + Send + Sync + 'static,
+        B: Backend + CreateBackend<'s, Global> + 'static,
     {
         Self::new_in::<B>(params, Global)
     }
