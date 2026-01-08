@@ -1,3 +1,5 @@
+use core::ffi::CStr;
+
 use crate::backends::{
     CreateBackend,
     vulkan::{Error, VulkanBackend, backend::FnTable},
@@ -19,9 +21,9 @@ impl<'s> CreateBackend<'s> for VulkanBackend {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct VulkanBackendParams<'s> {
-    pub application_name: Option<&'s str>,
+    pub application_name: Option<&'s CStr>,
     pub application_version: VulkanVersion,
-    pub engine_name: Option<&'s str>,
+    pub engine_name: Option<&'s CStr>,
     pub engine_version: VulkanVersion,
 }
 
@@ -40,7 +42,7 @@ impl Default for VulkanBackendParams<'_> {
 
 impl<'s> VulkanBackendParams<'s> {
     #[inline]
-    pub fn with_application_name(mut self, application_name: impl Into<&'s str>) -> Self {
+    pub fn with_application_name(mut self, application_name: impl Into<&'s CStr>) -> Self {
         self.application_name = Some(application_name.into());
         self
     }
@@ -55,7 +57,7 @@ impl<'s> VulkanBackendParams<'s> {
     }
 
     #[inline]
-    pub fn with_engine_name(mut self, engine_name: impl Into<&'s str>) -> Self {
+    pub fn with_engine_name(mut self, engine_name: impl Into<&'s CStr>) -> Self {
         self.engine_name = Some(engine_name.into());
         self
     }
