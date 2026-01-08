@@ -1,13 +1,12 @@
 use core::{
     alloc::Allocator,
     mem::MaybeUninit,
+    ops::{Deref, DerefMut},
     ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::atomic::{AtomicUsize, Ordering, fence},
 };
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::fence;
 
-use crate::backends::Backend;
+use crate::backends::{Backend, CreateBackend};
 
 use super::alloc::{BackendBox, allocate, deallocate};
 
@@ -16,7 +15,7 @@ where
     A: Allocator,
 {
     allocator: A,
-    backend: BackendBox,
+    backend: MaybeUninit<BackendBox>,
 
     ref_count: AtomicUsize,
 }
@@ -29,33 +28,38 @@ impl<A> ArcInner<A>
 where
     A: Allocator,
 {
-    pub(super) fn new<B>(allocator: A, backend: B) -> Self
+    pub(super) fn new<'s, B>(allocator: A, params: B::Params) -> Result<Self, B::Error>
     where
-        B: Backend + Send + Sync + 'static,
+        B: Backend + CreateBackend<'s, A> + Send + Sync + 'static,
     {
         unsafe {
-            let backend = BackendBox::new_in(&allocator, backend);
-
             let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A>>::uninit());
 
             buffer.as_mut().write(Inner {
                 allocator,
-                backend,
+                backend: MaybeUninit::uninit(),
                 ref_count: AtomicUsize::new(1),
             });
 
-            Self(buffer.cast())
+            let backend = BackendBox::new_in(
+                &buffer.as_ref().assume_init_ref().allocator,
+                B::create(&buffer.as_ref().assume_init_ref().allocator, params)?,
+            );
+
+            buffer.as_mut().assume_init_mut().backend = MaybeUninit::new(backend);
+
+            Ok(Self(buffer.cast()))
         }
     }
 
     #[inline(always)]
     pub(crate) fn backend(&self) -> &dyn Backend {
-        unsafe { self.0.as_ref().backend.deref() }
+        unsafe { self.0.as_ref().backend.assume_init_ref().deref() }
     }
 
     #[inline(always)]
     pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
-        unsafe { self.0.as_mut().backend.deref_mut() }
+        unsafe { self.0.as_mut().backend.assume_init_mut().deref_mut() }
     }
 }
 
@@ -93,7 +97,7 @@ where
             let Self(this) = self;
             let allocator = &this.as_ref().allocator;
 
-            this.as_ref().backend.drop(allocator);
+            this.as_ref().backend.assume_init_ref().drop(allocator);
 
             deallocate(allocator, *this);
         }

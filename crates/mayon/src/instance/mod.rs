@@ -18,9 +18,7 @@ impl<A: Allocator> Instance<A> {
     where
         B: Backend + CreateBackend<'s, A> + Send + Sync + 'static,
     {
-        let backend = B::create(&allocator, params)?;
-
-        let arc = ArcInner::new(allocator, backend);
+        let arc = ArcInner::new::<'s, B>(allocator, params)?;
 
         Ok(Self(arc))
     }

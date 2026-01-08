@@ -8,7 +8,6 @@ use crate::backends::{
 };
 use core::ffi::CStr;
 use std::alloc::Allocator;
-use std::ptr::NonNull;
 
 impl<'s, A> CreateBackend<'s, A> for VulkanBackend
 where
