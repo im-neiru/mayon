@@ -1,6 +1,6 @@
 use crate::backends::{
-    vulkan::{backend::FnTable, Error, VulkanBackend},
     CreateBackend,
+    vulkan::{Error, VulkanBackend, backend::FnTable},
 };
 
 impl<'s> CreateBackend<'s> for VulkanBackend {
