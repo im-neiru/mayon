@@ -6,7 +6,6 @@ mod fallible_result;
 
 use core::ffi::c_char;
 use fallible_result::FallibleResult;
-use std::ffi::c_void;
 
 mod rs {
     pub(super) use mayon::{
@@ -138,9 +137,9 @@ pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
 ///     printf("Error: %s\n", msg ? msg : "Unknown");
 /// }
 ///
-#[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mayon_last_error_message() -> *const c_char {
     errors::get_message()
 }
