@@ -4,7 +4,7 @@ pub trait Backend {}
 
 pub trait CreateBackend<'s, A>
 where
-    A: Allocator,
+    A: Allocator + 'static,
     Self: Backend,
 {
     type Error;
