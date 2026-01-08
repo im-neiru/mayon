@@ -7,3 +7,4 @@ edition = "2024"
 libloading = "0.9.0"
 
 # workspace crates
+thiserror.workspace = true
