@@ -5,4 +5,4 @@ mod types;
 
 pub use errors::{Error, ErrorKind, Result};
 
-pub use backend::{VulkanBackend, VulkanBackendParams};
+pub use backend::{VulkanBackend, VulkanBackendParams, VulkanVersion};
