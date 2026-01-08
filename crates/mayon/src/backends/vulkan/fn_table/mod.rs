@@ -1,4 +1,5 @@
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, ptr::NonNull};
+
 use std::sync::OnceLock;
 
 mod loader;
@@ -10,14 +11,18 @@ use crate::backends::vulkan::{
     types::{AllocationCallbacks, Instance, InstanceCreateInfo, VkResult},
 };
 
+type AllocRef<'a> = Option<NonNull<AllocationCallbacks<'a, ()>>>;
+
 pub struct FnTable {
     library: Option<Library>,
 
     pub fn_create_instance: unsafe extern "system" fn(
         create_info: *const InstanceCreateInfo,
-        allocator: *const AllocationCallbacks<()>,
+        allocator: AllocRef,
         instance: *mut MaybeUninit<Instance>,
     ) -> VkResult,
+
+    pub fn_destroy_instance: unsafe extern "system" fn(instance: Instance, allocator: AllocRef),
 }
 
 static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
@@ -31,6 +36,7 @@ impl FnTable {
         match unsafe { loader::vulkan_lib() } {
             Ok(library) => Ok(Self {
                 fn_create_instance: unsafe { *library.get("vkCreateInstance").unwrap() },
+                fn_destroy_instance: unsafe { *library.get("vkDestroyInstance").unwrap() },
 
                 library: Some(library),
             }),

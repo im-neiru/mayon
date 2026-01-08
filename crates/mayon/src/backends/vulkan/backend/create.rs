@@ -9,7 +9,7 @@ use crate::backends::{
     },
 };
 
-impl<'s, A> CreateBackend<'s, A> for VulkanBackend
+impl<'s, 'b, A> CreateBackend<'s, A> for VulkanBackend<'b>
 where
     A: Allocator + 'static,
 {
@@ -28,15 +28,20 @@ where
 
         let info = InstanceCreateInfo::new(&application_info, &layers, &extensions);
 
-        let _allocation_callbacks = AllocationCallbacks::new(allocator);
+        // let _allocation_callbacks = AllocationCallbacks::new(allocator);
+        let allocation_callbacks = None;
+
         let mut instance = MaybeUninit::uninit();
 
         let instance = unsafe {
-            (fns.fn_create_instance)(&info, null(), &mut instance)
+            (fns.fn_create_instance)(&info, allocation_callbacks, &mut instance)
                 .into_result("vkCreateInstance", || instance.assume_init())?
         };
 
-        Ok(Self { instance })
+        Ok(Self {
+            instance,
+            alloc: allocation_callbacks,
+        })
     }
 }
 
