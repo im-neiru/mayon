@@ -8,6 +8,7 @@ use crate::backends::{Backend, CreateBackend};
 
 use inner::ArcInner;
 
+#[derive(Clone)]
 pub struct Instance<A: Allocator = Global>(ArcInner<A>)
 where
     A: Allocator;
