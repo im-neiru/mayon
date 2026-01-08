@@ -1,3 +1,5 @@
+use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::null};
+
 use crate::backends::{
     CreateBackend,
     vulkan::{
@@ -6,32 +8,35 @@ use crate::backends::{
         types::{AllocationCallbacks, ApplicationInfo, InstanceCreateInfo},
     },
 };
-use core::ffi::CStr;
-use std::alloc::Allocator;
 
 impl<'s, A> CreateBackend<'s, A> for VulkanBackend
 where
-    A: Allocator,
+    A: Allocator + 'static,
 {
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
-    fn create(allocator: &A, params: Self::Params) -> Result<Self, Self::Error>
+    fn create<'a>(allocator: &A, params: Self::Params) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
-        let _fns = FnTable::global()?;
+        let fns = FnTable::global()?;
 
         let application_info = ApplicationInfo::new(params);
-        let _instance = InstanceCreateInfo::new(
-            &application_info,
-            &[c"VK_LAYER_KHRONOS_validation".as_ptr()],
-            &[c"VK_KHR_surface".as_ptr()],
-        );
+        let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
+        let extensions = [c"VK_KHR_surface".as_ptr()];
 
-        let allocation_callbacks = AllocationCallbacks::new(allocator);
+        let info = InstanceCreateInfo::new(&application_info, &layers, &extensions);
 
-        Ok(Self {})
+        let _allocation_callbacks = AllocationCallbacks::new(allocator);
+        let mut instance = MaybeUninit::uninit();
+
+        let instance = unsafe {
+            (fns.fn_create_instance)(&info, null(), &mut instance)
+                .into_result("vkCreateInstance", || instance.assume_init())?
+        };
+
+        Ok(Self { instance })
     }
 }
 
