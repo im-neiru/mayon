@@ -1,0 +1,10 @@
+[package]
+name = "c_api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# internal crates
+mayon = { path = "../mayon" }
+
+# workspace crates
