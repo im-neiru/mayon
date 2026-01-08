@@ -1,8 +1,5 @@
 mod traits;
-mod vulkan;
+pub mod vulkan;
 
-pub(crate) use traits::Backend;
+pub(crate) use traits::{Backend, CreateBackend};
 
-pub use vulkan::{
-    Error as VulkanError, ErrorKind as VulkanErrorKind, Result as VulkanResult,
-};
