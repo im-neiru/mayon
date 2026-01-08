@@ -2,16 +2,24 @@ mod loader;
 
 use libloading::Library;
 
+use crate::backend::vulkan::ErrorKind;
+
 pub struct FnTable {
     library: Option<Library>,
 }
 
 impl FnTable {
-    pub(crate) fn new() -> Self {
-        let library = unsafe { loader::vulkan_lib().unwrap() };
+    pub(crate) fn new() -> super::Result<Self> {
+        match unsafe { loader::vulkan_lib() } {
+            Ok(library) => Ok(Self {
+                library: Some(library),
+            }),
+            Err(err) => {
+                #[cfg(debug_assertions)]
+                eprintln!("Vulkan load error: {err}");
 
-        Self {
-            library: Some(library),
+                ErrorKind::VulkanLoad.into_result()
+            }
         }
     }
 }
