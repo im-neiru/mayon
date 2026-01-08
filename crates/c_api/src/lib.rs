@@ -1,6 +1,7 @@
 //! C-compatible Vulkan backend API for Mayon.
 
 mod conversions;
+mod errors;
 
 use core::ffi::c_char;
 
@@ -64,11 +65,15 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     param: *const VulkanBackendParams,
     out_instance: *mut Instance,
 ) -> i32 {
-    if param.is_null() || out_instance.is_null() {
+    if out_instance.is_null() {
         return -1;
     }
 
-    let param = &*param;
+    let Some(param) = param.as_ref() else {
+        errors::set_null_pointer_arg(c"param");
+
+        return -1;
+    };
 
     let rust_params = rs::VulkanBackendParams {
         application_name: conversions::ptr_to_op_cstr(param.application_name),
@@ -80,9 +85,13 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     match rs::Instance::new::<'static, rs::VulkanBackend>(rust_params) {
         Ok(instance) => {
             out_instance.write(instance.into());
+
             0
         }
-        Err(_) => -1,
+        Err(err) => {
+            errors::set_vulkan_error(err);
+            -1
+        }
     }
 }
 
