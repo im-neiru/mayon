@@ -6,8 +6,9 @@ use core::{
 };
 use std::sync::atomic::fence;
 
-use super::alloc::{BackendBox, allocate, deallocate};
 use crate::backends::Backend;
+
+use super::alloc::{BackendBox, allocate, deallocate};
 
 pub(crate) struct Inner<A>
 where
@@ -27,9 +28,9 @@ impl<A> ArcInner<A>
 where
     A: Allocator,
 {
-    pub(super) unsafe fn new<B>(allocator: A, backend: B) -> Self
+    pub(super) fn new<B>(allocator: A, backend: B) -> Self
     where
-        B: Backend + 'static,
+        B: Backend + Send + Sync + 'static,
     {
         unsafe {
             let backend = BackendBox::new_in(&allocator, backend);
@@ -87,3 +88,6 @@ where
         }
     }
 }
+
+unsafe impl<A: Allocator + Send> Send for ArcInner<A> {}
+unsafe impl<A: Allocator + Sync> Sync for ArcInner<A> {}

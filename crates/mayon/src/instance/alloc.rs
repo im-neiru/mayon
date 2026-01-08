@@ -35,7 +35,7 @@ where
 }
 
 pub struct BackendBox {
-    ptr: NonNull<dyn Backend>,
+    ptr: NonNull<dyn Backend + Send + Sync>,
     layout: Layout,
 }
 
@@ -44,7 +44,7 @@ impl BackendBox {
     pub unsafe fn new_in<A, B>(allocator: &A, value: B) -> Self
     where
         A: Allocator,
-        B: Backend + 'static,
+        B: Backend + Send + Sync + 'static,
     {
         let layout = Layout::new::<B>();
 
