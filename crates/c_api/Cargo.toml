@@ -1,7 +1,12 @@
 [package]
-name = "c_api"
+name = "mayon_c_api"
 version = "0.1.0"
 edition = "2024"
+
+[lib]
+name = "mayon"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
 
 [dependencies]
 # internal crates
