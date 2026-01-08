@@ -1,9 +1,10 @@
-use crate::backends::vulkan::{VulkanBackendParams, VulkanVersion};
 use core::{
     ffi::{CStr, c_char, c_void},
     marker::PhantomData,
 };
 use std::ptr::null;
+
+use crate::backends::vulkan::{VulkanBackendParams, VulkanVersion};
 
 use super::StructureType;
 
