@@ -1,18 +1,8 @@
-use core::{
-    alloc::{Allocator, Layout},
-    ffi::c_void,
-    marker::PhantomData,
-    ptr::NonNull,
-};
-
-use std::alloc::handle_alloc_error;
+use core::{alloc::Allocator, ffi::c_void, marker::PhantomData};
 
 #[repr(C)]
-pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A>
-where
-    A: Allocator,
-{
-    pub user_data: *const c_void,
+pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
+    pub allocator: *const A,
     pub fn_allocation: FnAllocationFunction,
     pub fn_reallocation: FnReallocationFunction,
     pub fn_free: FnFreeFunction,
@@ -23,12 +13,12 @@ where
 
 impl<'a, A> AllocationCallbacks<'a, A>
 where
-    A: Allocator,
+    A: Allocator + 'static,
 {
     pub(crate) fn new(allocator: *const A) -> Self {
         Self {
             // TODO: redirect allocations to allocator
-            user_data: allocator.cast(),
+            allocator,
             fn_allocation: None,
             fn_reallocation: None,
             fn_free: None,
