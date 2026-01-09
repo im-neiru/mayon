@@ -5,7 +5,7 @@ mod errors;
 mod fallible_result;
 
 use core::ffi::c_char;
-use fallible_result::FallibleResult;
+use fallible_result::MynFallibleResult;
 
 mod rs {
     pub(super) use mayon::{
@@ -66,7 +66,7 @@ pub struct Instance(usize);
 pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     param: *const VulkanBackendParams,
     out_instance: *mut Instance,
-) -> FallibleResult {
+) -> MynFallibleResult {
     if out_instance.is_null() {
         return errors::set_null_pointer_arg(c"out_instance");
     }

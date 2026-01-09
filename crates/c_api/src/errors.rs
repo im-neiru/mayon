@@ -5,7 +5,7 @@ use core::{
 
 use std::ptr::null;
 
-use crate::fallible_result::FallibleResult;
+use crate::fallible_result::MynFallibleResult;
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<Error>> = const { RefCell::new(None) };
@@ -13,7 +13,7 @@ thread_local! {
 }
 
 pub(crate) enum Error {
-    NullPointerArg {
+    NullArg {
         name: &'static CStr,
     },
     FailedBackendLoad {
@@ -26,26 +26,26 @@ pub(crate) enum Error {
 }
 
 #[inline]
-pub(crate) fn set_ok() -> FallibleResult {
+pub(crate) fn set_ok() -> MynFallibleResult {
     LAST_ERROR.set(None);
 
-    FallibleResult::Ok
+    MynFallibleResult::MAYON_RESULT_OK
 }
 
 #[inline]
-pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> FallibleResult {
-    LAST_ERROR.set(Some(Error::NullPointerArg { name }));
+pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
+    LAST_ERROR.set(Some(Error::NullArg { name }));
 
-    FallibleResult::NullPointerParam
+    MynFallibleResult::MAYON_RESULT_NULL_ARG
 }
 
 #[inline]
-pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> FallibleResult {
+pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> MynFallibleResult {
     match error.kind() {
         mayon::backends::vulkan::ErrorKind::VulkanLoad => {
             LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
 
-            FallibleResult::BackendLoadFailed
+            MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
         }
         mayon::backends::vulkan::ErrorKind::VulkanFunctionError {
             function_name,
@@ -56,7 +56,7 @@ pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> Fallibl
                 return_code: code as i32,
             }));
 
-            FallibleResult::VulkanFunctionError
+            MynFallibleResult::MAYON_RESULT_VULKAN_LOAD_ERROR
         }
     }
 }
@@ -69,9 +69,7 @@ pub(crate) fn get_message() -> *const c_char {
         };
 
         match err {
-            Error::NullPointerArg { name } => {
-                store_message(format!("Null pointer argument: {:?}", name))
-            }
+            Error::NullArg { name } => store_message(format!("Null pointer argument: {:?}", name)),
             Error::FailedBackendLoad { name } => {
                 store_message(format!("Failed to load {:?} backend", name))
             }
