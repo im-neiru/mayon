@@ -5,14 +5,14 @@ use core::{
 
 use crate::rs;
 
-impl From<rs::Instance> for crate::Instance {
+impl From<rs::Instance> for crate::MynInstance {
     #[inline(always)]
     fn from(value: rs::Instance) -> Self {
         unsafe { transmute::<rs::Instance, Self>(value) }
     }
 }
 
-impl Deref for crate::Instance {
+impl Deref for crate::MynInstance {
     type Target = rs::Instance;
 
     #[inline(always)]
@@ -23,7 +23,7 @@ impl Deref for crate::Instance {
     }
 }
 
-impl DerefMut for crate::Instance {
+impl DerefMut for crate::MynInstance {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         let ptr: *mut Self::Target = (self as *mut Self).cast();

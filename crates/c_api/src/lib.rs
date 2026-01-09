@@ -14,72 +14,79 @@ mod rs {
     };
 }
 
-/// Vulkan backend initialization parameters.
+/// @brief Vulkan backend initialization parameters.
 ///
-/// All pointer fields are borrowed for the duration of the call.
+/// @note All pointer fields are borrowed for the duration of the call.
 #[repr(C)]
-pub struct VulkanBackendParams {
-    /// Optional null-terminated UTF-8 application name.
+pub struct MynVkBackendParams {
+    /// @brief Optional null-terminated UTF-8 application name.
     pub application_name: *const c_char,
 
-    /// Application version.
-    pub application_version: VulkanVersion,
+    /// @brief Application version.
+    pub application_version: MynVkVersion,
 
-    /// Optional null-terminated UTF-8 engine name.
+    /// @brief Optional null-terminated UTF-8 engine name.
     pub engine_name: *const c_char,
 
-    /// Engine version.
-    pub engine_version: VulkanVersion,
+    /// @brief Engine version.
+    pub engine_version: MynVkVersion,
 }
 
-/// Vulkan version structure.
+/// @brief Vulkan version structure.
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct VulkanVersion {
+pub struct MynVkVersion {
+    /// @brief Major version number (e.g., 1 in Vulkan 1.3.0).
     pub major: u32,
+    /// @brief Minor version number (e.g., 3 in Vulkan 1.3.0).
     pub minor: u32,
+    /// @brief Patch version number (e.g., 0 in Vulkan 1.3.0).
     pub patch: u32,
 }
 
-/// Opaque Mayon instance handle.
+/// @brief Opaque Mayon instance handle.
 ///
-/// Instances are reference-counted internally.
+/// @note Instances are reference-counted internally.
 #[repr(C)]
-pub struct Instance(usize);
+pub struct MynInstance(usize);
 
-/// Creates a new Mayon instance using the Vulkan backend.
+/// @brief Creates a new Mayon instance using the Vulkan API as backend.
 ///
-/// Returns `0` on success and writes a valid [`Instance`] to `out_instance`.
-/// Returns a non-zero value on failure.
+/// @param params Pointer to a \c MynVkBackendParams structure. Must not be \c NULL.
+/// @param out_instance Pointer to storage that will receive the created Instance. Must not be \c NULL.
 ///
-/// # Safety
+/// @return \c MAYON_RESULT_OK on success.
+/// @return A non-zero \c MynFallibleResult error code on failure.
+/// @return \c MAYON_RESULT_NULL_ARG if \p params or \p out_instance is \c NULL.
 ///
-/// - `param` must point to a valid [`VulkanBackendParams`].
-/// - `out_instance` must point to writable, properly aligned storage for
-///   an [`Instance`].
-/// - If non-null, string pointers in `param` must be valid, null-terminated
-///   UTF-8 strings for the duration of the call.
+/// @par Behavior
+/// On success, a valid Instance handle is written to \p out_instance.
+/// On failure, *\p out_instance remains unchanged and an error message is stored
+/// (retrievable via \c mayon_last_error_message()).
 ///
-/// On failure, `out_instance` is not written.
+/// @par Requirements
+/// - \p params must point to a valid \c MynVkBackendParams structure.
+/// - \p out_instance must point to writable, properly aligned memory.
+/// - All string pointers within \p params must be valid null-terminated UTF-8 C strings.
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
-    param: *const VulkanBackendParams,
-    out_instance: *mut Instance,
+    params: *const MynVkBackendParams,
+    out_instance: *mut MynInstance,
 ) -> MynFallibleResult {
     if out_instance.is_null() {
         return errors::set_null_pointer_arg(c"out_instance");
     }
 
-    let Some(param) = param.as_ref() else {
-        return errors::set_null_pointer_arg(c"param");
+    let Some(params) = params.as_ref() else {
+        return errors::set_null_pointer_arg(c"params");
     };
 
     let rust_params = rs::VulkanBackendParams {
-        application_name: conversions::ptr_to_op_cstr(param.application_name),
-        application_version: param.application_version.into(),
-        engine_name: conversions::ptr_to_op_cstr(param.engine_name),
-        engine_version: param.engine_version.into(),
+        application_name: conversions::ptr_to_op_cstr(params.application_name),
+        application_version: params.application_version.into(),
+        engine_name: conversions::ptr_to_op_cstr(params.engine_name),
+        engine_version: params.engine_version.into(),
     };
 
     match rs::Instance::new::<'static, rs::VulkanBackend>(rust_params) {
@@ -92,22 +99,22 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     }
 }
 
-/// Releases a Mayon instance.
+/// @brief Releases a Mayon instance.
 ///
-/// Passing a null pointer has no effect.
+/// @param instance Pointer to the Mayon instance to release.
 ///
-/// # Safety
+/// @note
 ///
-/// - `instance` must be a pointer obtained from this API or null.
-/// - The instance must not be released more times than it was created.
+/// \par Safety
 ///
-/// Instances are internally reference-counted. Releasing the same instance
+/// - Instances are internally reference-counted. Releasing the same instance
 /// multiple times may cause unintended deallocation once the reference count
 /// reaches zero.
 ///
+/// - Passing a null pointer has no effect.
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
-pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
+pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
     let Some(instance) = instance.as_mut().map(core::ops::DerefMut::deref_mut) else {
         return;
     };
@@ -115,28 +122,18 @@ pub unsafe extern "C" fn mayon_drop_instance(instance: *mut Instance) {
     core::ptr::drop_in_place(instance);
 }
 
-/// Returns a pointer to the last error message for the current thread.
+/// @brief Returns the last error message for the calling thread.
 ///
-/// Each thread has its own last-error message; calls on one thread do not
-/// affect the message seen on another thread.
+/// @returns Pointer to a null-terminated UTF-8 string describing the last error.
+/// @returns NULL if no error is currently set.
 ///
-/// @return A pointer to a null-terminated UTF-8 C string (`const char*`).
-///         Returns NULL if no error is set.
+/// @par Lifetime and ownership:
+/// - The returned pointer must NOT be freed.
+/// - The pointer remains valid until the next error is set on the same thread.
 ///
-/// @note
-/// - Do not free the returned string.
-/// - The pointer is valid until the next error is set on the same thread.
-/// - Thread-safe: only returns the error for the calling thread.
-///
-/// @example
-/// struct Instance instance;
-/// enum FallibleResult result = mayon_new_instance_on_vulkan(&params, &instance);
-///
-/// if (result != Ok) {
-///     const char* msg = mayon_last_error_message();
-///     printf("Error: %s\n", msg ? msg : "Unknown");
-/// }
-///
+/// @par Threading:
+/// - Error messages are stored per-thread.
+/// - Calling this function does not affect other threads.
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
 #[unsafe(no_mangle)]
