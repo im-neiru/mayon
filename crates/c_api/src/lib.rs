@@ -1,5 +1,6 @@
-//! C-compatible Vulkan backend API for Mayon.
+#![feature(allocator_api)]
 
+mod allocator;
 mod conversions;
 mod errors;
 mod fallible_result;
@@ -53,6 +54,7 @@ pub struct MynInstance(usize);
 /// @brief Creates a new Mayon instance using the Vulkan API as backend.
 ///
 /// @param params Pointer to a \c MynVkBackendParams structure. Must not be \c NULL.
+/// @param allocator use to set a custom allocator.
 /// @param out_instance Pointer to storage that will receive the created Instance. Must not be \c NULL.
 ///
 /// @return \c MAYON_RESULT_OK on success.
@@ -72,6 +74,7 @@ pub struct MynInstance(usize);
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     params: *const MynVkBackendParams,
+    allocator: *const allocator::MynCustomAllocator,
     out_instance: *mut MynInstance,
 ) -> MynFallibleResult {
     if out_instance.is_null() {
@@ -89,7 +92,20 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         engine_version: params.engine_version.into(),
     };
 
-    match rs::Instance::new::<'static, rs::VulkanBackend>(rust_params) {
+    let result = if allocator.is_null() {
+        rs::Instance::new::<'static, rs::VulkanBackend>(rust_params)
+    } else {
+        rs::Instance::new_in::<'static, rs::VulkanBackend>(rust_params, *allocator)
+    };
+
+    match rs::Instance::new_in::<'static, rs::VulkanBackend>(
+        rust_params,
+        if allocator.is_null() {
+            std::alloc::Global
+        } else {
+            *allocator
+        },
+    ) {
         Ok(instance) => {
             out_instance.write(instance.into());
 
