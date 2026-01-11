@@ -84,6 +84,24 @@ typedef struct MynVkBackendParams {
   struct MynVkVersion engine_version;
 } MynVkBackendParams;
 
+typedef struct MynMemLayout {
+  uintptr_t size;
+  uintptr_t alignment;
+} MynMemLayout;
+
+typedef struct MynCustomAllocator {
+  uint8_t *(*pfn_allocate)(struct MynMemLayout layout);
+  uint8_t *(*pfn_allocate_zeroed)(struct MynMemLayout layout);
+  void (*pfn_deallocate)(const uint8_t *ptr, struct MynMemLayout layout);
+  uint8_t *(*pfn_grow)(uint8_t *ptr, struct MynMemLayout old_layout, struct MynMemLayout new_layout);
+  uint8_t *(*pfn_grow_zeroed)(uint8_t *ptr,
+                              struct MynMemLayout old_layout,
+                              struct MynMemLayout new_layout);
+  uint8_t *(*pfn_shrink)(uint8_t *ptr,
+                         struct MynMemLayout old_layout,
+                         struct MynMemLayout new_layout);
+} MynCustomAllocator;
+
 /**
  * @brief Opaque Mayon instance handle.
  *
@@ -101,6 +119,7 @@ extern "C" {
  * @brief Creates a new Mayon instance using the Vulkan API as backend.
  *
  * @param params Pointer to a \c MynVkBackendParams structure. Must not be \c NULL.
+ * @param allocator use to set a custom allocator.
  * @param out_instance Pointer to storage that will receive the created Instance. Must not be \c NULL.
  *
  * @return \c MAYON_RESULT_OK on success.
@@ -118,6 +137,7 @@ extern "C" {
  * - All string pointers within \p params must be valid null-terminated UTF-8 C strings.
  */
 MynFallibleResult mayon_new_instance_on_vulkan(const struct MynVkBackendParams *params,
+                                               const struct MynCustomAllocator *allocator,
                                                struct MynInstance *out_instance);
 
 /**

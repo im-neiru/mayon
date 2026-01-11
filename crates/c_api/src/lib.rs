@@ -92,16 +92,10 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         engine_version: params.engine_version.into(),
     };
 
-    let result = if allocator.is_null() {
-        rs::Instance::new::<'static, rs::VulkanBackend>(rust_params)
-    } else {
-        rs::Instance::new_in::<'static, rs::VulkanBackend>(rust_params, *allocator)
-    };
-
     match rs::Instance::new_in::<'static, rs::VulkanBackend>(
         rust_params,
         if allocator.is_null() {
-            std::alloc::Global
+            allocator::MynCustomAllocator::DEFAULT
         } else {
             *allocator
         },

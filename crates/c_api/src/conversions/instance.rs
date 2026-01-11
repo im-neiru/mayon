@@ -1,14 +1,17 @@
+use crate::rs;
 use core::{
+    alloc::Allocator,
     mem::transmute,
     ops::{Deref, DerefMut},
 };
 
-use crate::rs;
-
-impl From<rs::Instance> for crate::MynInstance {
+impl<A> From<rs::Instance<A>> for crate::MynInstance
+where
+    A: Allocator,
+{
     #[inline(always)]
-    fn from(value: rs::Instance) -> Self {
-        unsafe { transmute::<rs::Instance, Self>(value) }
+    fn from(value: rs::Instance<A>) -> Self {
+        unsafe { transmute::<rs::Instance<A>, Self>(value) }
     }
 }
 
