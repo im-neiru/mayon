@@ -1,9 +1,15 @@
-use core::{alloc::Allocator, ffi::c_void, marker::PhantomData};
+use core::{
+    alloc::{Allocator, Layout},
+    ffi::c_void,
+    marker::PhantomData,
+    mem::size_of,
+    ptr::{NonNull, null_mut},
+};
 
 #[repr(C)]
 pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
-    pub allocator: *const A,
-    pub fn_allocation: FnAllocationFunction,
+    pub allocator: NonNull<A>,
+    pub fn_allocation: FnAllocationFunction<A>,
     pub fn_reallocation: FnReallocationFunction,
     pub fn_free: FnFreeFunction,
     pub fn_internal_allocation: FnInternalAllocationNotification,
@@ -15,11 +21,10 @@ impl<'a, A> AllocationCallbacks<'a, A>
 where
     A: Allocator + 'static,
 {
-    pub(crate) fn new(allocator: *const A) -> Self {
+    pub(crate) fn new(allocator: NonNull<A>) -> Self {
         Self {
-            // TODO: redirect allocations to allocator
             allocator,
-            fn_allocation: None,
+            fn_allocation: Self::handle_allocation,
             fn_reallocation: None,
             fn_free: None,
             fn_internal_allocation: None,
@@ -27,16 +32,49 @@ where
             _marker: Default::default(),
         }
     }
+
+    #[allow(unsafe_op_in_unsafe_fn)]
+    unsafe extern "system" fn handle_allocation(
+        allocator: NonNull<A>,
+        size: usize,
+        alignment: usize,
+        _: SystemAllocationScope,
+    ) -> *mut c_void {
+        if let Ok(ptr) = allocator
+            .as_ref()
+            .allocate(Layout::from_size_align_unchecked(size, alignment))
+        {
+            let offset = Self::write_layout(ptr, size, alignment);
+
+            ptr.as_ptr().cast::<c_void>().byte_add(offset)
+        } else {
+            null_mut()
+        }
+    }
+
+    #[allow(unsafe_op_in_unsafe_fn)]
+    unsafe fn write_layout(ptr: NonNull<[u8]>, size: usize, alignment: usize) -> usize {
+        type LayoutType = [usize; 2];
+
+        let layout: LayoutType = [size, alignment];
+        const BYTE_SIZE: usize = size_of::<LayoutType>();
+
+        let src = layout.as_ptr().cast_mut().cast::<u8>();
+        let dest: *mut u8 = ptr.as_ptr().cast();
+
+        dest.copy_from_nonoverlapping(src, BYTE_SIZE);
+
+        BYTE_SIZE
+    }
 }
 
-pub(in crate::backends::vulkan) type FnAllocationFunction = Option<
+pub(in crate::backends::vulkan) type FnAllocationFunction<A> =
     unsafe extern "system" fn(
-        user_data: *mut c_void,
+        allocator: NonNull<A>,
         size: usize,
         alignment: usize,
         allocation_scope: SystemAllocationScope,
-    ) -> *mut c_void,
->;
+    ) -> *mut c_void;
 
 pub(in crate::backends::vulkan) type FnReallocationFunction = Option<
     unsafe extern "system" fn(
