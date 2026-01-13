@@ -3,7 +3,7 @@ use core::{
     ffi::c_void,
     marker::PhantomData,
     mem::size_of,
-    ptr::{NonNull, null_mut},
+    ptr::NonNull,
 };
 
 #[repr(C)]
@@ -11,7 +11,7 @@ pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
     pub allocator: NonNull<A>,
     pub fn_allocation: FnAllocationFunction<A>,
     pub fn_reallocation: FnReallocationFunction<A>,
-    pub fn_free: FnFreeFunction,
+    pub fn_free: FnFreeFunction<A>,
     pub fn_internal_allocation: FnInternalAllocationNotification,
     pub fn_internal_free: FnInternalFreeNotification,
     pub _marker: PhantomData<&'a A>,
@@ -26,7 +26,7 @@ where
             allocator,
             fn_allocation: Self::handle_allocation,
             fn_reallocation: Self::handle_reallocation,
-            fn_free: None,
+            fn_free: Self::handle_free,
             fn_internal_allocation: None,
             fn_internal_free: None,
             _marker: Default::default(),
@@ -84,6 +84,15 @@ where
             None
         }
     }
+
+    #[allow(unsafe_op_in_unsafe_fn)]
+    unsafe extern "system" fn handle_free(allocator: NonNull<A>, memory: NonNull<c_void>) {
+        let allocator = allocator.as_ref();
+
+        let (layout, true_ptr) = read_layout(memory.cast());
+
+        allocator.deallocate(true_ptr, layout);
+    }
 }
 
 pub(in crate::backends::vulkan) type FnAllocationFunction<A> =
@@ -103,8 +112,8 @@ pub(in crate::backends::vulkan) type FnReallocationFunction<A> =
         allocation_scope: SystemAllocationScope,
     ) -> Option<NonNull<c_void>>;
 
-pub type FnFreeFunction =
-    Option<unsafe extern "system" fn(p_user_data: *mut c_void, p_memory: *mut c_void)>;
+pub type FnFreeFunction<A> =
+    unsafe extern "system" fn(allocator: NonNull<A>, memory: NonNull<c_void>);
 
 pub(in crate::backends::vulkan) type FnInternalAllocationNotification = Option<
     unsafe extern "system" fn(
