@@ -30,6 +30,9 @@ pub enum MynFallibleResult {
     /// @brief A backend failed to initialize due to a platform or loader error.
     MAYON_RESULT_BACKEND_LOAD_ERROR = 0o1_2_00_01, // subsystem=0, detail=1
 
+    /// @brief Unsupported target windowing platform
+    MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 0o1_2_00_02, // subsystem=0, detail=2
+
     // --- Backend Graphics API Errors (class=03) ---
     /// @brief Vulkan could not be loaded or initialized.
     MAYON_RESULT_VULKAN_LOAD_ERROR = 0o1_3_00_01, // subsystem=00 (Vulkan), detail=1

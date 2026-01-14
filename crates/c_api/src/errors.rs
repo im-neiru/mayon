@@ -5,6 +5,11 @@ use core::{
 
 use std::ptr::null;
 
+use mayon::{
+    BaseError,
+    backends::{CreateError, CreateErrorKind, vulkan::ErrorKind as VulkanErrorKind},
+};
+
 use crate::fallible_result::MynFallibleResult;
 
 thread_local! {
@@ -16,6 +21,7 @@ pub(crate) enum Error {
     NullArg {
         name: &'static CStr,
     },
+    UnsupportedTargetPlatform,
     FailedBackendLoad {
         name: &'static CStr,
     },
@@ -40,17 +46,22 @@ pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
 }
 
 #[inline]
-pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> MynFallibleResult {
+pub(crate) fn set_vulkan_error(error: CreateError<VulkanErrorKind>) -> MynFallibleResult {
     match error.kind() {
-        mayon::backends::vulkan::ErrorKind::VulkanLoad => {
+        CreateErrorKind::UnsupportedTargetPlatform => {
+            LAST_ERROR.set(Some(Error::UnsupportedTargetPlatform));
+
+            MynFallibleResult::MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR
+        }
+        CreateErrorKind::BackendInternal(VulkanErrorKind::VulkanLoad) => {
             LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
 
             MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
         }
-        mayon::backends::vulkan::ErrorKind::VulkanFunctionError {
+        CreateErrorKind::BackendInternal(VulkanErrorKind::VulkanFunctionError {
             function_name,
             code,
-        } => {
+        }) => {
             LAST_ERROR.set(Some(Error::VulkanFunction {
                 function_name,
                 return_code: code as i32,
@@ -70,6 +81,9 @@ pub(crate) fn get_message() -> *const c_char {
 
         match err {
             Error::NullArg { name } => store_message(format!("Null pointer argument: {:?}", name)),
+            Error::UnsupportedTargetPlatform => {
+                store_message("UnsupportedPlatformError".to_string())
+            }
             Error::FailedBackendLoad { name } => {
                 store_message(format!("Failed to load {:?} backend", name))
             }
