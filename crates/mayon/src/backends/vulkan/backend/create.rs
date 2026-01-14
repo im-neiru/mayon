@@ -1,8 +1,9 @@
 use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
 use crate::{
+    BaseError,
     backends::{
-        CreateBackend, TargetPlatform, UnsupportedPlatformError,
+        CreateBackend, CreateError, TargetPlatform, UnsupportedPlatformError,
         vulkan::{
             Error, VulkanBackend,
             backend::FnTable,
@@ -20,7 +21,11 @@ where
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
-    fn create<'a>(allocator: &A, logger: &mut L, params: Self::Params) -> Result<Self, Self::Error>
+    fn create<'a>(
+        allocator: &A,
+        logger: &mut L,
+        params: Self::Params,
+    ) -> Result<Self, CreateError<<Self::Error as BaseError>::ErrorKind>>
     where
         Self: Sized,
     {
