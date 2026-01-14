@@ -39,7 +39,7 @@ where
         {
             // store layout
             let layout_dest = ptr.as_ptr().cast::<Layout>();
-            layout_dest.write(data_layout);
+            layout_dest.write(block_layout);
         }
 
         Ok(NonNull::slice_from_raw_parts(
@@ -56,8 +56,18 @@ where
         todo!()
     }
 
+    #[allow(unsafe_op_in_unsafe_fn)]
     unsafe fn deallocate_with_stored_layout(&self, ptr: NonNull<u8>) {
-        todo!()
+        let block_layout = {
+            let layout_ptr = ptr
+                .as_ptr()
+                .byte_sub(LAYOUT_OF_STRUCT_LAYOUT.size())
+                .cast::<Layout>();
+
+            layout_ptr.read()
+        };
+
+        self.deallocate(ptr, block_layout);
     }
 }
 
