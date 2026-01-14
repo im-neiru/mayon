@@ -1,5 +1,7 @@
 use core::panic::Location;
 
+use crate::backends::{CreateError, CreateErrorKind::BackendInternal};
+
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
 pub struct Error {
@@ -53,5 +55,14 @@ impl ErrorKind {
     #[inline]
     pub(super) const fn into_result<T>(self) -> self::Result<T> {
         Err(Error { kind: self })
+    }
+}
+
+impl<'a> From<self::Error> for CreateError<self::ErrorKind> {
+    fn from(value: self::Error) -> Self {
+        Self {
+            kind: BackendInternal(value.kind),
+            location: value.location,
+        }
     }
 }
