@@ -1,6 +1,4 @@
-use crate::rs;
-
-impl From<crate::MynVkVersion> for rs::VulkanVersion {
+impl From<crate::MynVkVersion> for mayon::backends::vulkan::VulkanVersion {
     #[inline(always)]
     fn from(value: crate::MynVkVersion) -> Self {
         let crate::MynVkVersion {

@@ -8,12 +8,13 @@ mod fallible_result;
 use core::ffi::c_char;
 use fallible_result::MynFallibleResult;
 
-mod rs {
-    pub(super) use mayon::{
-        Instance,
-        backends::vulkan::{VulkanBackend, VulkanBackendParams, VulkanVersion},
-    };
-}
+use mayon::{
+    Instance,
+    backends::vulkan::{VulkanBackend, VulkanBackendParams},
+    logger::DefaultLogger,
+};
+
+use crate::allocator::MynCustomAllocator;
 
 /// @brief Vulkan backend initialization parameters.
 ///
@@ -86,20 +87,21 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         return errors::set_null_pointer_arg(c"params");
     };
 
-    let rust_params = rs::VulkanBackendParams {
+    let rust_params = VulkanBackendParams {
         application_name: conversions::ptr_to_op_cstr(params.application_name),
         application_version: params.application_version.into(),
         engine_name: conversions::ptr_to_op_cstr(params.engine_name),
         engine_version: params.engine_version.into(),
     };
 
-    match rs::Instance::new_in::<'static, rs::VulkanBackend<'_, allocator::MynCustomAllocator>>(
+    match Instance::new_in::<'static, VulkanBackend<'_, allocator::MynCustomAllocator>>(
         rust_params,
         if allocator.is_null() {
             allocator::MynCustomAllocator::DEFAULT
         } else {
             *allocator
         },
+        DefaultLogger,
     ) {
         Ok(instance) => {
             out_instance.write(instance.into());
@@ -127,7 +129,10 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
-    let Some(instance) = instance.as_mut().map(core::ops::DerefMut::deref_mut) else {
+    let Some(instance) = instance
+        .as_mut()
+        .map(MynInstance::inner_mut::<MynCustomAllocator, DefaultLogger>)
+    else {
         return;
     };
 
