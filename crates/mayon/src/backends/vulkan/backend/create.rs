@@ -1,22 +1,26 @@
 use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
-use crate::backends::{
-    CreateBackend,
-    vulkan::{
-        Error, VulkanBackend,
-        backend::FnTable,
-        types::{AllocationCallbacks, ApplicationInfo, InstanceCreateInfo},
+use crate::{
+    backends::{
+        CreateBackend,
+        vulkan::{
+            Error, VulkanBackend,
+            backend::FnTable,
+            types::{AllocationCallbacks, ApplicationInfo, InstanceCreateInfo},
+        },
     },
+    logger::{Logger, Target as LogTarget},
 };
 
-impl<'s, 'b, A> CreateBackend<'s, A> for VulkanBackend<'b, A>
+impl<'s, 'b, A, L> CreateBackend<'s, A, L> for VulkanBackend<'b, A>
 where
     A: Allocator + 'static,
+    L: Logger + 'static,
 {
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
-    fn create<'a>(allocator: &A, params: Self::Params) -> Result<Self, Self::Error>
+    fn create<'a>(allocator: &A, logger: &mut L, params: Self::Params) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
@@ -38,6 +42,8 @@ where
             (fns.fn_create_instance)(&info, allocation_callbacks.alloc_ref(), &mut instance)
                 .into_result("vkCreateInstance", || instance.assume_init())?
         };
+
+        crate::info!(logger, LogTarget::Backend, "Vulkan instance created");
 
         Ok(Self {
             instance,

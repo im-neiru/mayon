@@ -37,7 +37,7 @@ where
 {
     pub(super) fn new<'s, B>(allocator: A, logger: L, params: B::Params) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, A> + 'static,
+        B: Backend + CreateBackend<'s, A, L> + 'static,
     {
         unsafe {
             let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A, L>>::uninit());
@@ -49,9 +49,11 @@ where
                 ref_count: AtomicUsize::new(1),
             });
 
+            let inner = buffer.as_mut().assume_init_mut();
+
             let backend = BackendBox::new_in(
-                &buffer.as_ref().assume_init_ref().allocator,
-                B::create(&buffer.as_ref().assume_init_ref().allocator, params)?,
+                &inner.allocator,
+                B::create(&inner.allocator, &mut inner.logger, params)?,
             );
 
             buffer.as_mut().assume_init_mut().backend = MaybeUninit::new(backend);

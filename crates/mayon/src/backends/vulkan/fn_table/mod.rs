@@ -39,12 +39,7 @@ impl FnTable {
 
                 library: Some(library),
             }),
-            Err(err) => {
-                #[cfg(debug_assertions)]
-                eprintln!("Vulkan load error: {err}");
-
-                ErrorKind::VulkanLoad.into_result()
-            }
+            Err(_) => ErrorKind::VulkanLoad.into_result(),
         }
     }
 }

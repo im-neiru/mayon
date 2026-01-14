@@ -22,7 +22,7 @@ where
 {
     pub fn new_in<'s, B>(params: B::Params, allocator: A, logger: L) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, A> + 'static,
+        B: Backend + CreateBackend<'s, A, L> + 'static,
     {
         let arc = ArcInner::new::<'s, B>(allocator, logger, params)?;
 
@@ -37,7 +37,7 @@ where
     #[inline]
     pub fn new<'s, B>(params: B::Params, logger: L) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, Global> + 'static,
+        B: Backend + CreateBackend<'s, Global, L> + 'static,
     {
         Self::new_in::<B>(params, Global, logger)
     }
