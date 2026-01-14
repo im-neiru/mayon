@@ -2,7 +2,7 @@ use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
 use crate::{
     backends::{
-        CreateBackend,
+        CreateBackend, TargetPlatform,
         vulkan::{
             Error, VulkanBackend,
             backend::FnTable,
@@ -58,6 +58,7 @@ pub struct VulkanBackendParams<'s> {
     pub application_version: VulkanVersion,
     pub engine_name: Option<&'s CStr>,
     pub engine_version: VulkanVersion,
+    pub target_platform: Option<TargetPlatform>,
 }
 
 impl Default for VulkanBackendParams<'_> {
@@ -69,6 +70,7 @@ impl Default for VulkanBackendParams<'_> {
             application_version: v0_1,
             engine_name: None,
             engine_version: v0_1,
+            target_platform: None,
         }
     }
 }

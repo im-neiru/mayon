@@ -29,6 +29,7 @@ impl ApplicationInfo<'_> {
             application_version,
             engine_name,
             engine_version,
+            target_platform: _,
         }: VulkanBackendParams,
     ) -> Self {
         Self {
