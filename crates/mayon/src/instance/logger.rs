@@ -1,17 +1,33 @@
 use core::fmt::Arguments;
 
 pub trait Logger {
-    fn log(&mut self, level: Level, args: Arguments);
+    fn log(&mut self, level: Level, target: Target, args: Arguments);
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, strum::Display)]
 pub enum Level {
+    #[strum(to_string = "Error")]
     Error = 1,
+
+    #[strum(to_string = "Warn")]
     Warn = 2,
+
+    #[strum(to_string = "Info")]
     Info = 3,
+
+    #[strum(to_string = "Debug")]
     Debug = 4,
+
+    #[strum(to_string = "Trace")]
     Trace = 5,
+}
+
+#[repr(u16)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, strum::Display, strum::IntoStaticStr)]
+pub enum Target {
+    #[strum(serialize = "mayon::backend")]
+    Backend,
 }
 
 #[derive(Default)]
@@ -23,7 +39,7 @@ pub struct QuietLogger;
 impl Logger for DefaultLogger {
     #[inline]
     #[track_caller]
-    fn log(&mut self, level: Level, args: Arguments) {
+    fn log(&mut self, level: Level, target: Target, args: Arguments) {
         let level = match level {
             Level::Error => log::Level::Error,
             Level::Warn => log::Level::Warn,
@@ -36,6 +52,7 @@ impl Logger for DefaultLogger {
 
         let record = log::Record::builder()
             .level(level)
+            .target(Into::<&'static str>::into(target))
             .file_static(Some(location.file()))
             .line(Some(location.line()))
             .args(args)
@@ -47,7 +64,7 @@ impl Logger for DefaultLogger {
 
 impl Logger for QuietLogger {
     #[inline(always)]
-    fn log(&mut self, _: Level, _: Arguments) {
+    fn log(&mut self, _: Level, _: Target, _: Arguments) {
         /* Be quiet */
     }
 }
