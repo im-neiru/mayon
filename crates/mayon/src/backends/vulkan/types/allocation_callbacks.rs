@@ -2,7 +2,7 @@ use core::{
     alloc::{Allocator, Layout},
     ffi::c_void,
     marker::PhantomData,
-    mem::size_of,
+    mem::{size_of, transmute},
     ptr::NonNull,
 };
 
@@ -16,6 +16,9 @@ pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
     pub fn_internal_free: FnInternalFreeNotification,
     pub _marker: PhantomData<&'a A>,
 }
+
+pub(in crate::backends::vulkan) type AllocationCallbacksRef<'a> =
+    NonNull<AllocationCallbacks<'a, ()>>;
 
 impl<'a, A> AllocationCallbacks<'a, A>
 where
@@ -31,6 +34,14 @@ where
             fn_internal_free: None,
             _marker: Default::default(),
         }
+    }
+
+    #[inline]
+    #[allow(unsafe_op_in_unsafe_fn)]
+    pub(crate) const unsafe fn alloc_ref(&self) -> AllocationCallbacksRef<'a> {
+        let self_ptr = self as *const Self;
+
+        transmute::<*const Self, AllocationCallbacksRef>(self_ptr)
     }
 
     #[allow(unsafe_op_in_unsafe_fn)]
