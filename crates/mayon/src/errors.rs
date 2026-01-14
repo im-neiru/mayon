@@ -12,6 +12,7 @@ where
     fn kind(&self) -> Self::ErrorKind;
 }
 
+#[cfg(feature = "error_location")]
 pub trait HasErrorLocation {
     fn location(&self) -> &'static Location<'static>;
 }

@@ -22,15 +22,18 @@ pub enum ErrorKind {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-impl Error {
-    #[inline]
-    pub const fn kind(&self) -> ErrorKind {
+impl crate::HasErrorKind for Error {
+    type ErrorKind = ErrorKind;
+
+    fn kind(&self) -> Self::ErrorKind {
         self.kind
     }
+}
 
+impl crate::HasErrorLocation for Error {
     #[cfg(feature = "error_location")]
     #[inline]
-    pub const fn location(&self) -> &'static Location<'static> {
+    fn location(&self) -> &'static Location<'static> {
         self.location
     }
 }
