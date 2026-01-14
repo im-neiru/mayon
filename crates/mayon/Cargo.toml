@@ -12,6 +12,7 @@ libloading = "0.9.0"
 log = "0.4.29"
 
 # workspace crates
+strum.workspace = true
 thiserror.workspace = true
 
 # internal crates
