@@ -10,6 +10,7 @@ error_location = []
 [dependencies]
 libloading = "0.9.0"
 log = "0.4.29"
+raw-window-handle = "0.6.2"
 
 # workspace crates
 strum.workspace = true
