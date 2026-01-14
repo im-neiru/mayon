@@ -1,5 +1,7 @@
+use core::fmt::Arguments;
+
 pub trait Logger {
-    fn log(&mut self, level: Level, message: &str);
+    fn log(&mut self, level: Level, args: Arguments);
 }
 
 #[repr(u8)]
@@ -20,14 +22,32 @@ pub struct QuietLogger;
 
 impl Logger for DefaultLogger {
     #[inline]
-    fn log(&mut self, _level: Level, _message: &str) {
-        todo!()
+    #[track_caller]
+    fn log(&mut self, level: Level, args: Arguments) {
+        let level = match level {
+            Level::Error => log::Level::Error,
+            Level::Warn => log::Level::Warn,
+            Level::Info => log::Level::Info,
+            Level::Debug => log::Level::Debug,
+            Level::Trace => log::Level::Trace,
+        };
+
+        let location = core::panic::Location::caller();
+
+        let record = log::Record::builder()
+            .level(level)
+            .file_static(Some(location.file()))
+            .line(Some(location.line()))
+            .args(args)
+            .build();
+
+        log::logger().log(&record);
     }
 }
 
 impl Logger for QuietLogger {
     #[inline(always)]
-    fn log(&mut self, _: Level, _: &str) {
+    fn log(&mut self, _: Level, _: Arguments) {
         /* Be quiet */
     }
 }
