@@ -72,6 +72,7 @@ pub struct MynInstance(usize);
 /// - All string pointers within \p params must be valid null-terminated UTF-8 C strings.
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     params: *const MynVkBackendParams,
     allocator: *const allocator::MynCustomAllocator,
@@ -118,12 +119,13 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 /// \par Safety
 ///
 /// - Instances are internally reference-counted. Releasing the same instance
-/// multiple times may cause unintended deallocation once the reference count
-/// reaches zero.
+///   multiple times may cause unintended deallocation once the reference count
+///   reaches zero.
 ///
 /// - Passing a null pointer has no effect.
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
     let Some(instance) = instance.as_mut().map(core::ops::DerefMut::deref_mut) else {
         return;
@@ -144,9 +146,9 @@ pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
 /// @par Threading:
 /// - Error messages are stored per-thread.
 /// - Calling this function does not affect other threads.
+#[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
-#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mayon_last_error_message() -> *const c_char {
     errors::get_message()
 }

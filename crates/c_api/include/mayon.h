@@ -150,8 +150,8 @@ MynFallibleResult mayon_new_instance_on_vulkan(const struct MynVkBackendParams *
  * \par Safety
  *
  * - Instances are internally reference-counted. Releasing the same instance
- * multiple times may cause unintended deallocation once the reference count
- * reaches zero.
+ *   multiple times may cause unintended deallocation once the reference count
+ *   reaches zero.
  *
  * - Passing a null pointer has no effect.
  */
