@@ -1,10 +1,11 @@
-use crate::backends::Backend;
 use core::{
     alloc::{Allocator, Layout},
+    ops::{Deref, DerefMut},
     ptr::NonNull,
 };
 use std::alloc::handle_alloc_error;
-use std::ops::{Deref, DerefMut};
+
+use crate::backends::Backend;
 
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
