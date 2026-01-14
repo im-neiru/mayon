@@ -25,11 +25,27 @@ impl<A> AllocatorUtils for A
 where
     A: Allocator,
 {
+    #[allow(unsafe_op_in_unsafe_fn)]
     unsafe fn allocate_with_stored_layout(
         &self,
-        layout: Layout,
+        data_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        todo!()
+        let Ok((block_layout, data_offset)) = LAYOUT_OF_STRUCT_LAYOUT.extend(data_layout) else {
+            return Err(AllocError);
+        };
+
+        let ptr = self.allocate(block_layout)?;
+
+        {
+            // store layout
+            let layout_dest = ptr.as_ptr().cast::<Layout>();
+            layout_dest.write(data_layout);
+        }
+
+        Ok(NonNull::slice_from_raw_parts(
+            ptr.byte_add(data_offset).cast(),
+            data_layout.size(),
+        ))
     }
 
     unsafe fn reallocate_with_stored_layout(
@@ -44,3 +60,5 @@ where
         todo!()
     }
 }
+
+const LAYOUT_OF_STRUCT_LAYOUT: Layout = Layout::new::<Layout>();
