@@ -2,7 +2,7 @@ use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
 use crate::{
     backends::{
-        CreateBackend, TargetPlatform,
+        CreateBackend, TargetPlatform, UnsupportedPlatformError,
         vulkan::{
             Error, VulkanBackend,
             backend::FnTable,
@@ -101,6 +101,22 @@ impl<'s> VulkanBackendParams<'s> {
     pub fn with_engine_version(mut self, engine_version: impl Into<VulkanVersion>) -> Self {
         self.engine_version = engine_version.into();
         self
+    }
+
+    #[inline]
+    pub fn with_target_from_rwh(
+        mut self,
+        display: Option<impl Into<raw_window_handle::RawDisplayHandle>>,
+    ) -> Result<Self, UnsupportedPlatformError> {
+        if let Some(display) = display {
+            let target = TargetPlatform::from_raw_display_handle(display.into())?;
+
+            self.target_platform = Some(target);
+        } else {
+            self.target_platform = None;
+        }
+
+        Ok(self)
     }
 }
 

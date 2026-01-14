@@ -5,5 +5,5 @@ mod traits;
 pub use create_error::{CreateError, CreateErrorKind};
 pub mod vulkan;
 
-pub use target_platform::TargetPlatform;
+pub use target_platform::{TargetPlatform, UnsupportedPlatformError};
 pub(crate) use traits::{Backend, CreateBackend};
