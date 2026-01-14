@@ -81,7 +81,7 @@ where
         // store new block layout
         ptr.byte_add(new_layout_offset)
             .cast::<Layout>()
-            .write(new_layout);
+            .write(data_layout);
 
         let data_slice_ptr =
             NonNull::slice_from_raw_parts(ptr.byte_add(new_data_offset).cast(), data_layout.size());
