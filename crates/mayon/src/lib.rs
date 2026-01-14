@@ -7,4 +7,4 @@ mod instance;
 
 pub use instance::{Instance, logger};
 
-pub use errors::{HasErrorKind, HasErrorLocation};
+pub use errors::BaseError;

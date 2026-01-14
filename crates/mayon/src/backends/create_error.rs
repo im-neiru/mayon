@@ -25,7 +25,7 @@ where
     BackendInternal(B),
 }
 
-impl<B> crate::HasErrorKind for CreateError<B>
+impl<B> crate::BaseError for CreateError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
@@ -34,12 +34,7 @@ where
     fn kind(&self) -> Self::ErrorKind {
         self.kind
     }
-}
 
-impl<B> crate::HasErrorLocation for CreateError<B>
-where
-    B: Copy + Clone + Debug + Display,
-{
     #[cfg(feature = "error_location")]
     #[inline]
     fn location(&self) -> &'static Location<'static> {
