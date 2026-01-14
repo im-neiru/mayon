@@ -1,35 +1,37 @@
-use crate::rs;
-use core::{
-    alloc::Allocator,
-    mem::transmute,
-    ops::{Deref, DerefMut},
-};
+use core::{alloc::Allocator, mem::transmute};
 
-impl<A> From<rs::Instance<A>> for crate::MynInstance
+use mayon::{Instance, logger::Logger};
+
+impl<A, L> From<Instance<A, L>> for crate::MynInstance
 where
     A: Allocator,
+    L: Logger,
 {
     #[inline(always)]
-    fn from(value: rs::Instance<A>) -> Self {
-        unsafe { transmute::<rs::Instance<A>, Self>(value) }
+    fn from(value: Instance<A, L>) -> Self {
+        unsafe { transmute::<Instance<A, L>, Self>(value) }
     }
 }
 
-impl Deref for crate::MynInstance {
-    type Target = rs::Instance;
-
+impl crate::MynInstance {
     #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        let ptr: *const Self::Target = (self as *const Self).cast();
+    pub fn inner<A, L>(&self) -> &Instance<A, L>
+    where
+        A: Allocator + 'static,
+        L: Logger + 'static,
+    {
+        let ptr: *const Instance<A, L> = (self as *const Self).cast();
 
         unsafe { ptr.as_ref().unwrap_unchecked() }
     }
-}
 
-impl DerefMut for crate::MynInstance {
     #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        let ptr: *mut Self::Target = (self as *mut Self).cast();
+    pub fn inner_mut<A, L>(&mut self) -> &mut Instance<A, L>
+    where
+        A: Allocator + 'static,
+        L: Logger + 'static,
+    {
+        let ptr: *mut Instance<A, L> = (self as *mut Self).cast();
 
         unsafe { ptr.as_mut().unwrap_unchecked() }
     }

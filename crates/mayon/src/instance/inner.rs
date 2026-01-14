@@ -8,42 +8,52 @@ use core::{
 
 use crate::backends::{Backend, CreateBackend};
 
-use super::alloc::{BackendBox, allocate, deallocate};
+use super::{
+    alloc::{BackendBox, allocate, deallocate},
+    logger::Logger,
+};
 
-pub(crate) struct Inner<A>
+pub(crate) struct Inner<A, L>
 where
     A: Allocator,
+    L: Logger,
 {
     allocator: A,
+    logger: L,
     backend: MaybeUninit<BackendBox>,
 
     ref_count: AtomicUsize,
 }
 
-pub(crate) struct ArcInner<A>(NonNull<Inner<A>>)
-where
-    A: Allocator;
-
-impl<A> ArcInner<A>
+pub(crate) struct ArcInner<A, L>(NonNull<Inner<A, L>>)
 where
     A: Allocator,
+    L: Logger;
+
+impl<A, L> ArcInner<A, L>
+where
+    A: Allocator + 'static,
+    L: Logger + 'static,
 {
-    pub(super) fn new<'s, B>(allocator: A, params: B::Params) -> Result<Self, B::Error>
+    pub(super) fn new<'s, B>(allocator: A, logger: L, params: B::Params) -> Result<Self, B::Error>
     where
-        B: Backend + CreateBackend<'s, A> + 'static,
+        B: Backend + CreateBackend<'s, A, L> + 'static,
     {
         unsafe {
-            let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A>>::uninit());
+            let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A, L>>::uninit());
 
             buffer.as_mut().write(Inner {
                 allocator,
+                logger,
                 backend: MaybeUninit::uninit(),
                 ref_count: AtomicUsize::new(1),
             });
 
+            let inner = buffer.as_mut().assume_init_mut();
+
             let backend = BackendBox::new_in(
-                &buffer.as_ref().assume_init_ref().allocator,
-                B::create(&buffer.as_ref().assume_init_ref().allocator, params)?,
+                &inner.allocator,
+                B::create(&inner.allocator, &mut inner.logger, params)?,
             );
 
             buffer.as_mut().assume_init_mut().backend = MaybeUninit::new(backend);
@@ -63,9 +73,10 @@ where
     }
 }
 
-impl<A> Clone for ArcInner<A>
+impl<A, L> Clone for ArcInner<A, L>
 where
     A: Allocator,
+    L: Logger,
 {
     fn clone(&self) -> Self {
         const MAX_REFCOUNT: usize = (isize::MAX) as _;
@@ -82,9 +93,10 @@ where
     }
 }
 
-impl<A> Drop for ArcInner<A>
+impl<A, L> Drop for ArcInner<A, L>
 where
     A: Allocator,
+    L: Logger,
 {
     fn drop(&mut self) {
         unsafe {
@@ -104,5 +116,5 @@ where
     }
 }
 
-unsafe impl<A: Allocator + Send> Send for ArcInner<A> {}
-unsafe impl<A: Allocator + Sync> Sync for ArcInner<A> {}
+unsafe impl<A: Allocator + Send, L: Logger> Send for ArcInner<A, L> {}
+unsafe impl<A: Allocator + Sync, L: Logger> Sync for ArcInner<A, L> {}
