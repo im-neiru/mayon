@@ -92,7 +92,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         engine_version: params.engine_version.into(),
     };
 
-    match rs::Instance::new_in::<'static, rs::VulkanBackend>(
+    match rs::Instance::new_in::<'static, rs::VulkanBackend<'_, allocator::MynCustomAllocator>>(
         rust_params,
         if allocator.is_null() {
             allocator::MynCustomAllocator::DEFAULT

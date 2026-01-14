@@ -13,7 +13,10 @@ pub struct Instance<A: Allocator = Global>(ArcInner<A>)
 where
     A: Allocator;
 
-impl<A: Allocator> Instance<A> {
+impl<A: Allocator> Instance<A>
+where
+    A: Allocator + 'static,
+{
     pub fn new_in<'s, B>(params: B::Params, allocator: A) -> Result<Self, B::Error>
     where
         B: Backend + CreateBackend<'s, A> + 'static,
