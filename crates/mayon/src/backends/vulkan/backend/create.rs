@@ -1,4 +1,4 @@
-use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit};
+use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
 use crate::backends::{
     CreateBackend,
@@ -9,7 +9,7 @@ use crate::backends::{
     },
 };
 
-impl<'s, 'b, A> CreateBackend<'s, A> for VulkanBackend<'b>
+impl<'s, 'b, A> CreateBackend<'s, A> for VulkanBackend<'b, A>
 where
     A: Allocator + 'static,
 {
@@ -28,13 +28,14 @@ where
 
         let info = InstanceCreateInfo::new(&application_info, &layers, &extensions);
 
-        // let _allocation_callbacks = AllocationCallbacks::new(allocator);
-        let allocation_callbacks = None;
+        let allocation_callbacks = AllocationCallbacks::new(unsafe {
+            NonNull::new_unchecked((allocator as *const A).cast_mut())
+        });
 
         let mut instance = MaybeUninit::uninit();
 
         let instance = unsafe {
-            (fns.fn_create_instance)(&info, allocation_callbacks, &mut instance)
+            (fns.fn_create_instance)(&info, allocation_callbacks.alloc_ref(), &mut instance)
                 .into_result("vkCreateInstance", || instance.assume_init())?
         };
 

@@ -1,24 +1,30 @@
 mod create;
 
-use core::ptr::NonNull;
+use std::alloc::Global;
 
 pub use create::{VulkanBackendParams, VulkanVersion};
 
 use crate::backends::vulkan::{fn_table::FnTable, types};
 
-pub struct VulkanBackend<'a> {
+pub struct VulkanBackend<'a, A = Global>
+where
+    A: core::alloc::Allocator + 'static,
+{
     instance: types::Instance,
-    alloc: Option<NonNull<types::AllocationCallbacks<'a, ()>>>,
+    alloc: types::AllocationCallbacks<'a, A>,
 }
 
-impl<'a> crate::backends::Backend for VulkanBackend<'a> {}
+impl<'a, A> crate::backends::Backend for VulkanBackend<'a, A> where A: core::alloc::Allocator {}
 
-impl<'a> Drop for VulkanBackend<'a> {
+impl<'a, A> Drop for VulkanBackend<'a, A>
+where
+    A: core::alloc::Allocator,
+{
     fn drop(&mut self) {
         let fns = FnTable::global().unwrap();
 
         unsafe {
-            (fns.fn_destroy_instance)(self.instance, self.alloc);
+            (fns.fn_destroy_instance)(self.instance, self.alloc.alloc_ref());
         }
     }
 }
