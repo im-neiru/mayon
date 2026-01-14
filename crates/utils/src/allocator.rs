@@ -30,7 +30,7 @@ where
         &self,
         data_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        let Ok((block_layout, data_offset)) = LAYOUT_OF_STRUCT_LAYOUT.extend(data_layout) else {
+        let Ok(block_layout) = LAYOUT_OF_STRUCT_LAYOUT.extend_packed(data_layout) else {
             return Err(AllocError);
         };
 
@@ -43,7 +43,7 @@ where
         }
 
         Ok(NonNull::slice_from_raw_parts(
-            ptr.byte_add(data_offset).cast(),
+            ptr.byte_add(LAYOUT_OF_STRUCT_LAYOUT.size()).cast(),
             data_layout.size(),
         ))
     }
