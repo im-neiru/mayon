@@ -2,9 +2,11 @@ use core::{
     alloc::{Allocator, Layout},
     ffi::c_void,
     marker::PhantomData,
-    mem::{size_of, transmute},
+    mem::transmute,
     ptr::NonNull,
 };
+
+use utils::AllocatorUtils;
 
 #[repr(C)]
 pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
@@ -51,16 +53,15 @@ where
         alignment: usize,
         _: SystemAllocationScope,
     ) -> Option<NonNull<c_void>> {
-        if let Ok(ptr) = allocator
-            .as_ref()
-            .allocate(Layout::from_size_align_unchecked(size, alignment))
-        {
-            write_layout(ptr, size, alignment);
+        let allocator = allocator.as_ref();
 
-            Some(ptr.cast::<c_void>().byte_add(LAYOUT_SIZE))
-        } else {
-            None
-        }
+        let Ok(ptr) = allocator
+            .allocate_with_stored_layout(Layout::from_size_align_unchecked(size, alignment))
+        else {
+            return None;
+        };
+
+        Some(ptr.cast())
     }
 
     #[allow(unsafe_op_in_unsafe_fn)]
@@ -73,36 +74,21 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
-        let (old_layout, true_ptr) = read_layout(original?.cast());
-
-        if old_layout.size() == size && old_layout.align() == alignment {
-            return original;
-        }
-
-        let new_layout = Layout::from_size_align_unchecked(size, alignment);
-
-        let result = if old_layout.size() > size {
-            allocator.shrink(true_ptr, old_layout, new_layout)
-        } else {
-            allocator.grow(true_ptr, old_layout, new_layout)
+        let Ok(ptr) = allocator.reallocate_with_stored_layout(
+            transmute::<Option<NonNull<c_void>>, NonNull<u8>>(original),
+            Layout::from_size_align_unchecked(size, alignment),
+        ) else {
+            return None;
         };
 
-        if let Ok(ptr) = result {
-            write_layout(ptr, size, alignment);
-
-            Some(ptr.cast::<c_void>().byte_add(LAYOUT_SIZE))
-        } else {
-            None
-        }
+        Some(ptr.cast())
     }
 
     #[allow(unsafe_op_in_unsafe_fn)]
     unsafe extern "system" fn handle_free(allocator: NonNull<A>, memory: NonNull<c_void>) {
         let allocator = allocator.as_ref();
 
-        let (layout, true_ptr) = read_layout(memory.cast());
-
-        allocator.deallocate(true_ptr, layout);
+        allocator.deallocate_with_stored_layout(memory.cast());
     }
 }
 
@@ -162,32 +148,4 @@ pub(in crate::backends::vulkan) struct InternalAllocationType(pub(crate) i32);
 
 impl InternalAllocationType {
     pub(in crate::backends::vulkan) const EXECUTABLE: Self = Self(0);
-}
-
-const LAYOUT_LENGTH: usize = 2;
-const LAYOUT_SIZE: usize = size_of::<LayoutType>();
-type LayoutType = [usize; LAYOUT_LENGTH];
-
-#[allow(unsafe_op_in_unsafe_fn)]
-unsafe fn write_layout(ptr: NonNull<[u8]>, size: usize, alignment: usize) {
-    let layout: LayoutType = [size, alignment];
-
-    let src = layout.as_ptr().cast_mut().cast::<u8>();
-    let dest: *mut u8 = ptr.as_ptr().cast();
-
-    dest.copy_from_nonoverlapping(src, LAYOUT_SIZE);
-}
-
-#[allow(unsafe_op_in_unsafe_fn)]
-unsafe fn read_layout(ptr: NonNull<u8>) -> (Layout, NonNull<u8>) {
-    let true_ptr = ptr.byte_sub(LAYOUT_SIZE);
-    let [size, alignment] =
-        *NonNull::slice_from_raw_parts(ptr.cast::<usize>(), LAYOUT_LENGTH).as_ref()
-    else {
-        unreachable!("This slice have is [usize; 2]")
-    };
-
-    let layout = Layout::from_size_align_unchecked(size, alignment);
-
-    (layout, true_ptr)
 }
