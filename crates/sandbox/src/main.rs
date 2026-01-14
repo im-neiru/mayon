@@ -1,4 +1,7 @@
-use mayon::backends::vulkan::{VulkanBackend, VulkanBackendParams};
+use mayon::{
+    backends::vulkan::{VulkanBackend, VulkanBackendParams},
+    logger::DefaultLogger,
+};
 
 fn main() {
     let _instance = mayon::Instance::new::<'static, VulkanBackend>(
@@ -6,6 +9,7 @@ fn main() {
             .with_application_name(c"Mayon")
             .with_engine_name(c"Mayon Engine")
             .with_application_version((1, 0)),
+        DefaultLogger,
     )
     .unwrap();
 }
