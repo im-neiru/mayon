@@ -6,4 +6,19 @@ edition = "2024"
 [lib]
 path = "lib.rs"
 
+[features]
+default = ["error_location"]
+error_location = []
+
 [dependencies]
+libloading = "0.9.0"
+log = "0.4.29"
+raw-window-handle = "0.6.2"
+
+# workspace crates
+bitflags.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+
+# internal crates
+utils = { path = "../utils" }
