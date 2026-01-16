@@ -1,5 +1,7 @@
 use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
+use utils::{BufferOverflowError, InlineVec};
+
 use crate::{
     BaseError,
     backends::{
@@ -33,9 +35,15 @@ where
 
         let application_info = ApplicationInfo::new(params);
         let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
-        let extensions = [ExtensionName::VK_KHR_SURFACE];
+        let mut extensions = InlineVec::<ExtensionName, 12>::new();
 
-        let info = InstanceCreateInfo::new(&application_info, &layers, &extensions);
+        if let Some(target_platform) = params.target_platform {
+            target_platform
+                .append_extension_names(&mut extensions)
+                .expect("Vulkan extension name buffer overflow");
+        }
+
+        let info = InstanceCreateInfo::new(&application_info, &layers, extensions.as_slice());
 
         let allocation_callbacks = AllocationCallbacks::new(unsafe {
             NonNull::new_unchecked((allocator as *const A).cast_mut())
@@ -159,5 +167,43 @@ impl From<(u32, u32)> for VulkanVersion {
     #[inline]
     fn from((major, minor): (u32, u32)) -> Self {
         Self::new(major, minor, 0)
+    }
+}
+
+impl TargetPlatform {
+    #[inline]
+    fn append_extension_names<const CAPACITY: usize>(
+        &self,
+        buffer: &mut InlineVec<ExtensionName, CAPACITY>,
+    ) -> Result<(), BufferOverflowError> {
+        if *self == Self::HEADLESS {
+            buffer.push(ExtensionName::SURFACE)?;
+        }
+
+        if self.contains(Self::WAYLAND) {
+            buffer.push(ExtensionName::WAYLAND_SURFACE)?;
+        }
+
+        if self.contains(Self::XCB) {
+            buffer.push(ExtensionName::XCB_SURFACE)?;
+        }
+
+        if self.contains(Self::XLIB) {
+            buffer.push(ExtensionName::XLIB_SURFACE)?;
+        }
+
+        if self.contains(Self::WIN32) {
+            buffer.push(ExtensionName::WIN32_SURFACE)?;
+        }
+
+        if self.contains(Self::ANDROID) {
+            buffer.push(ExtensionName::ANDROID_SURFACE)?;
+        }
+
+        if self.contains(Self::METAL) {
+            buffer.push(ExtensionName::MACOS_SURFACE)?;
+        }
+
+        Ok(())
     }
 }
