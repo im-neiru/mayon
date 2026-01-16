@@ -1,3 +1,5 @@
+#![feature(allocator_api)]
+
 mod backend;
 mod errors;
 mod fn_table;
