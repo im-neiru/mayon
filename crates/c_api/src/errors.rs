@@ -6,8 +6,8 @@ use core::{
 use std::ptr::null;
 
 use mayon::{
-    BaseError,
-    backends::{CreateError, CreateErrorKind, vulkan::ErrorKind as VulkanErrorKind},
+    BackendCreateKind, BaseError, CreateBackendError,
+    backends::vulkan::ErrorKind as VulkanErrorKind,
 };
 
 use crate::fallible_result::MynFallibleResult;
@@ -46,19 +46,19 @@ pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
 }
 
 #[inline]
-pub(crate) fn set_vulkan_error(error: CreateError<VulkanErrorKind>) -> MynFallibleResult {
+pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> MynFallibleResult {
     match error.kind() {
-        CreateErrorKind::UnsupportedTargetPlatform => {
+        BackendCreateKind::UnsupportedTargetPlatform => {
             LAST_ERROR.set(Some(Error::UnsupportedTargetPlatform));
 
             MynFallibleResult::MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR
         }
-        CreateErrorKind::BackendInternal(VulkanErrorKind::VulkanLoad) => {
+        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanLoad) => {
             LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
 
             MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
         }
-        CreateErrorKind::BackendInternal(VulkanErrorKind::VulkanFunctionError {
+        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanFunctionError {
             function_name,
             code,
         }) => {
