@@ -2,17 +2,15 @@ use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
 use utils::{BufferOverflowError, InlineVec};
 
-use crate::{
-    BaseError,
-    backends::{
-        CreateBackend, CreateError, TargetPlatform, UnsupportedPlatformError,
-        vulkan::{
-            Error, VulkanBackend,
-            backend::FnTable,
-            types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
-        },
-    },
+use mayon_core::{
+    BaseError, CreateBackend, CreateBackendError, TargetPlatform, UnsupportedPlatformError, info,
     logger::{Logger, Target as LogTarget},
+};
+
+use crate::{
+    Error, VulkanBackend,
+    backend::FnTable,
+    types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
 
 impl<'s, 'b, A, L> CreateBackend<'s, A, L> for VulkanBackend<'b, A>
@@ -27,7 +25,7 @@ where
         allocator: &A,
         logger: &mut L,
         params: Self::Params,
-    ) -> Result<Self, CreateError<<Self::Error as BaseError>::ErrorKind>>
+    ) -> Result<Self, CreateBackendError<<Self::Error as BaseError>::ErrorKind>>
     where
         Self: Sized,
     {
@@ -38,8 +36,7 @@ where
         let mut extensions = InlineVec::<ExtensionName, 12>::new();
 
         if let Some(target_platform) = params.target_platform {
-            target_platform
-                .append_extension_names(&mut extensions)
+            append_extension_names(&target_platform, &mut extensions)
                 .expect("Vulkan extension name buffer overflow");
         }
 
@@ -56,7 +53,7 @@ where
                 .into_result("vkCreateInstance", || instance.assume_init())?
         };
 
-        crate::info!(logger, LogTarget::Backend, "Vulkan instance created");
+        info!(logger, LogTarget::Backend, "Vulkan instance created");
 
         Ok(Self {
             instance,
@@ -151,7 +148,7 @@ impl VulkanVersion {
         }
     }
 
-    pub(in crate::backends::vulkan) const fn raw(&self) -> u32 {
+    pub(crate) const fn raw(&self) -> u32 {
         (self.major << 22) | (self.minor << 12) | self.patch
     }
 }
@@ -170,40 +167,38 @@ impl From<(u32, u32)> for VulkanVersion {
     }
 }
 
-impl TargetPlatform {
-    #[inline]
-    fn append_extension_names<const CAPACITY: usize>(
-        &self,
-        buffer: &mut InlineVec<ExtensionName, CAPACITY>,
-    ) -> Result<(), BufferOverflowError> {
-        if *self == Self::HEADLESS {
-            buffer.push(ExtensionName::SURFACE)?;
-        }
-
-        if self.contains(Self::WAYLAND) {
-            buffer.push(ExtensionName::WAYLAND_SURFACE)?;
-        }
-
-        if self.contains(Self::XCB) {
-            buffer.push(ExtensionName::XCB_SURFACE)?;
-        }
-
-        if self.contains(Self::XLIB) {
-            buffer.push(ExtensionName::XLIB_SURFACE)?;
-        }
-
-        if self.contains(Self::WIN32) {
-            buffer.push(ExtensionName::WIN32_SURFACE)?;
-        }
-
-        if self.contains(Self::ANDROID) {
-            buffer.push(ExtensionName::ANDROID_SURFACE)?;
-        }
-
-        if self.contains(Self::METAL) {
-            buffer.push(ExtensionName::MACOS_SURFACE)?;
-        }
-
-        Ok(())
+#[inline(always)]
+fn append_extension_names<const CAPACITY: usize>(
+    targets: &TargetPlatform,
+    buffer: &mut InlineVec<ExtensionName, CAPACITY>,
+) -> Result<(), BufferOverflowError> {
+    if *targets == TargetPlatform::HEADLESS {
+        buffer.push(ExtensionName::SURFACE)?;
     }
+
+    if targets.contains(TargetPlatform::WAYLAND) {
+        buffer.push(ExtensionName::WAYLAND_SURFACE)?;
+    }
+
+    if targets.contains(TargetPlatform::XCB) {
+        buffer.push(ExtensionName::XCB_SURFACE)?;
+    }
+
+    if targets.contains(TargetPlatform::XLIB) {
+        buffer.push(ExtensionName::XLIB_SURFACE)?;
+    }
+
+    if targets.contains(TargetPlatform::WIN32) {
+        buffer.push(ExtensionName::WIN32_SURFACE)?;
+    }
+
+    if targets.contains(TargetPlatform::ANDROID) {
+        buffer.push(ExtensionName::ANDROID_SURFACE)?;
+    }
+
+    if targets.contains(TargetPlatform::METAL) {
+        buffer.push(ExtensionName::MACOS_SURFACE)?;
+    }
+
+    Ok(())
 }
