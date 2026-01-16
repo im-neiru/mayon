@@ -6,7 +6,7 @@ mod loader;
 
 use libloading::Library;
 
-use crate::backends::vulkan::{
+use crate::{
     ErrorKind,
     types::{AllocationCallbacksRef, Instance, InstanceCreateInfo, VkResult},
 };
@@ -27,7 +27,7 @@ pub struct FnTable {
 static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
 
 impl FnTable {
-    pub(in crate::backends) fn global() -> super::Result<&'static Self> {
+    pub(crate) fn global() -> super::Result<&'static Self> {
         FN_TABLE.get_or_try_init(Self::new)
     }
 
