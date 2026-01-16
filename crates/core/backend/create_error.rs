@@ -14,6 +14,23 @@ where
     pub(crate) location: &'static Location<'static>,
 }
 
+impl<B> CreateBackendError<B>
+where
+    B: Copy + Clone + Debug + Display,
+{
+    #[inline]
+    pub const fn new(
+        kind: BackendCreateKind<B>,
+        #[cfg(feature = "error_location")] location: &'static Location<'static>,
+    ) -> Self {
+        Self {
+            kind,
+            #[cfg(feature = "error_location")]
+            location,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 pub enum BackendCreateKind<B>
 where
