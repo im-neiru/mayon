@@ -292,7 +292,7 @@ fn append_extension_names<const CAPACITY: usize>(
     targets: &TargetPlatform,
     buffer: &mut InlineVec<ExtensionName, CAPACITY>,
 ) -> Result<(), BufferOverflowError> {
-    if *targets == TargetPlatform::HEADLESS {
+    if !targets.is_empty() {
         buffer.push(ExtensionName::SURFACE)?;
     }
 
