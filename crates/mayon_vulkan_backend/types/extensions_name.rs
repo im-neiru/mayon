@@ -2,7 +2,7 @@ use core::ffi::{CStr, c_char};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug)]
-pub(in crate::backends::vulkan) struct ExtensionName(*const c_char);
+pub(crate) struct ExtensionName(*const c_char);
 
 impl ExtensionName {
     pub const SURFACE: Self = Self::new(c"VK_KHR_surface");
@@ -15,7 +15,7 @@ impl ExtensionName {
     pub const MACOS_SURFACE: Self = Self::new(c"VK_MVK_macos_surface");
 
     #[inline]
-    pub(in crate::backends::vulkan) const fn new(value: &'static CStr) -> Self {
+    pub(crate) const fn new(value: &'static CStr) -> Self {
         Self(value.as_ptr())
     }
 }

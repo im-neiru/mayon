@@ -1,6 +1,6 @@
 use core::mem::transmute;
 
-use crate::backends::vulkan::{Error, ErrorKind::VulkanFunctionError, Result};
+use crate::{Error, ErrorKind::VulkanFunctionError, Result};
 
 #[repr(i32)]
 #[allow(unused)]

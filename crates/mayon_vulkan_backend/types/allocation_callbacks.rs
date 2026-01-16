@@ -9,7 +9,7 @@ use core::{
 use utils::AllocatorUtils;
 
 #[repr(C)]
-pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
+pub(crate) struct AllocationCallbacks<'a, A> {
     pub allocator: NonNull<A>,
     pub fn_allocation: FnAllocationFunction<A>,
     pub fn_reallocation: FnReallocationFunction<A>,
@@ -19,8 +19,7 @@ pub(in crate::backends::vulkan) struct AllocationCallbacks<'a, A> {
     pub _marker: PhantomData<&'a A>,
 }
 
-pub(in crate::backends::vulkan) type AllocationCallbacksRef<'a> =
-    NonNull<AllocationCallbacks<'a, ()>>;
+pub(crate) type AllocationCallbacksRef<'a> = NonNull<AllocationCallbacks<'a, ()>>;
 
 impl<'a, A> AllocationCallbacks<'a, A>
 where
@@ -92,27 +91,25 @@ where
     }
 }
 
-pub(in crate::backends::vulkan) type FnAllocationFunction<A> =
-    unsafe extern "system" fn(
-        allocator: NonNull<A>,
-        size: usize,
-        alignment: usize,
-        allocation_scope: SystemAllocationScope,
-    ) -> Option<NonNull<c_void>>;
+pub(crate) type FnAllocationFunction<A> = unsafe extern "system" fn(
+    allocator: NonNull<A>,
+    size: usize,
+    alignment: usize,
+    allocation_scope: SystemAllocationScope,
+) -> Option<NonNull<c_void>>;
 
-pub(in crate::backends::vulkan) type FnReallocationFunction<A> =
-    unsafe extern "system" fn(
-        allocator: NonNull<A>,
-        original: Option<NonNull<c_void>>,
-        size: usize,
-        alignment: usize,
-        allocation_scope: SystemAllocationScope,
-    ) -> Option<NonNull<c_void>>;
+pub(crate) type FnReallocationFunction<A> = unsafe extern "system" fn(
+    allocator: NonNull<A>,
+    original: Option<NonNull<c_void>>,
+    size: usize,
+    alignment: usize,
+    allocation_scope: SystemAllocationScope,
+) -> Option<NonNull<c_void>>;
 
 pub type FnFreeFunction<A> =
     unsafe extern "system" fn(allocator: NonNull<A>, memory: NonNull<c_void>);
 
-pub(in crate::backends::vulkan) type FnInternalAllocationNotification = Option<
+pub(crate) type FnInternalAllocationNotification = Option<
     unsafe extern "system" fn(
         user_data: *mut c_void,
         size: usize,
@@ -121,7 +118,7 @@ pub(in crate::backends::vulkan) type FnInternalAllocationNotification = Option<
     ),
 >;
 
-pub(in crate::backends::vulkan) type FnInternalFreeNotification = Option<
+pub(crate) type FnInternalFreeNotification = Option<
     unsafe extern "system" fn(
         user_data: *mut c_void,
         size: usize,
@@ -132,20 +129,20 @@ pub(in crate::backends::vulkan) type FnInternalFreeNotification = Option<
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub(in crate::backends::vulkan) struct SystemAllocationScope(pub(crate) i32);
+pub(crate) struct SystemAllocationScope(pub(crate) i32);
 
 impl SystemAllocationScope {
-    pub(in crate::backends::vulkan) const COMMAND: Self = Self(0);
-    pub(in crate::backends::vulkan) const OBJECT: Self = Self(1);
-    pub(in crate::backends::vulkan) const CACHE: Self = Self(2);
-    pub(in crate::backends::vulkan) const DEVICE: Self = Self(3);
-    pub(in crate::backends::vulkan) const INSTANCE: Self = Self(4);
+    pub(crate) const COMMAND: Self = Self(0);
+    pub(crate) const OBJECT: Self = Self(1);
+    pub(crate) const CACHE: Self = Self(2);
+    pub(crate) const DEVICE: Self = Self(3);
+    pub(crate) const INSTANCE: Self = Self(4);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub(in crate::backends::vulkan) struct InternalAllocationType(pub(crate) i32);
+pub(crate) struct InternalAllocationType(pub(crate) i32);
 
 impl InternalAllocationType {
-    pub(in crate::backends::vulkan) const EXECUTABLE: Self = Self(0);
+    pub(crate) const EXECUTABLE: Self = Self(0);
 }

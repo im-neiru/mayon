@@ -1,7 +1,7 @@
 #[repr(i32)]
 #[allow(unused)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub(in crate::backends::vulkan) enum StructureType {
+pub(crate) enum StructureType {
     ApplicationInfo = 0,
     InstanceCreateInfo = 1,
     DeviceQueueCreateInfo = 2,

@@ -4,12 +4,12 @@ use core::{
 };
 use std::ptr::null;
 
-use crate::backends::vulkan::{VulkanBackendParams, VulkanVersion};
+use crate::{VulkanBackendParams, VulkanVersion};
 
 use super::StructureType;
 
 #[repr(C)]
-pub(in crate::backends::vulkan) struct ApplicationInfo<'a> {
+pub(crate) struct ApplicationInfo<'a> {
     pub struct_type: StructureType,
     pub next: *const c_void,
     pub application_name: *const c_char,

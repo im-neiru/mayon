@@ -7,7 +7,7 @@ use std::ptr::null;
 use super::{ApplicationInfo, ExtensionName, StructureType};
 
 #[repr(C)]
-pub(in crate::backends::vulkan) struct InstanceCreateInfo<'a> {
+pub(crate) struct InstanceCreateInfo<'a> {
     pub struct_type: StructureType,
     pub next: *const c_void,
     pub flags: InstanceCreateFlags,
