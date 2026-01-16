@@ -93,7 +93,7 @@ where
     /// `Err(CreateBackendError)` with `kind` set to `self`.
     #[cfg(not(feature = "error_location"))]
     #[inline]
-    pub const fn into_result<T>(self) -> self::Result<T> {
+    pub const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
         Err(CreateBackendError { kind: self })
     }
 }
