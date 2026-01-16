@@ -1,5 +1,6 @@
 mod allocation_callbacks;
 mod application_info;
+mod extensions_name;
 mod instance;
 mod instance_create_info;
 mod result;
@@ -8,6 +9,7 @@ mod win32_surface_create_info;
 
 pub(super) use allocation_callbacks::*;
 pub(super) use application_info::ApplicationInfo;
+pub(super) use extensions_name::ExtensionName;
 pub(super) use instance::Instance;
 pub(super) use instance_create_info::InstanceCreateInfo;
 pub(super) use result::VkResult;

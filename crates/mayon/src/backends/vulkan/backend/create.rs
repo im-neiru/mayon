@@ -7,7 +7,7 @@ use crate::{
         vulkan::{
             Error, VulkanBackend,
             backend::FnTable,
-            types::{AllocationCallbacks, ApplicationInfo, InstanceCreateInfo},
+            types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
         },
     },
     logger::{Logger, Target as LogTarget},
@@ -33,7 +33,7 @@ where
 
         let application_info = ApplicationInfo::new(params);
         let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
-        let extensions = [c"VK_KHR_surface".as_ptr()];
+        let extensions = [ExtensionName::VK_KHR_SURFACE];
 
         let info = InstanceCreateInfo::new(&application_info, &layers, &extensions);
 

@@ -4,7 +4,7 @@ use core::{
 };
 use std::ptr::null;
 
-use super::{ApplicationInfo, StructureType};
+use super::{ApplicationInfo, ExtensionName, StructureType};
 
 #[repr(C)]
 pub(in crate::backends::vulkan) struct InstanceCreateInfo<'a> {
@@ -15,7 +15,7 @@ pub(in crate::backends::vulkan) struct InstanceCreateInfo<'a> {
     pub enabled_layer_count: u32,
     pub enabled_layer_names: *const *const c_char,
     pub enabled_extension_count: u32,
-    pub enabled_extension_names: *const *const c_char,
+    pub enabled_extension_names: *const ExtensionName,
     pub _marker: PhantomData<&'a ()>,
 }
 
@@ -23,7 +23,7 @@ impl<'a> InstanceCreateInfo<'a> {
     pub fn new(
         application_info: &'a ApplicationInfo,
         layer_names: &'a [*const c_char],
-        extension_names: &'a [*const c_char],
+        extension_names: &'a [ExtensionName],
     ) -> Self {
         Self {
             struct_type: StructureType::InstanceCreateInfo,
