@@ -4,5 +4,6 @@ resolver = "3"
 
 [workspace.dependencies]
 bitflags = "2.10.0"
+raw-window-handle = "0.6.2"
 strum = { version = "0.27.2", features = ["derive"] }
 thiserror = "2.0.17"
