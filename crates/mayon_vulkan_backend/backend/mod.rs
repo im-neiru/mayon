@@ -5,7 +5,7 @@ use std::alloc::Global;
 
 pub use create::{VulkanBackendParams, VulkanVersion};
 
-use crate::backends::vulkan::{fn_table::FnTable, types};
+use crate::{fn_table::FnTable, types};
 
 pub struct VulkanBackend<'a, A = Global>
 where
@@ -15,7 +15,7 @@ where
     alloc: types::AllocationCallbacks<'a, A>,
 }
 
-impl<'a, A> crate::backends::Backend for VulkanBackend<'a, A> where A: core::alloc::Allocator {}
+impl<'a, A> mayon_core::Backend for VulkanBackend<'a, A> where A: core::alloc::Allocator {}
 
 impl<'a, A> Drop for VulkanBackend<'a, A>
 where
