@@ -81,3 +81,13 @@ impl<T, const CAPACITY: usize> IndexMut<usize> for InlineVec<T, CAPACITY> {
         }
     }
 }
+
+impl<T, const CAPACITY: usize> Drop for InlineVec<T, CAPACITY> {
+    fn drop(&mut self) {
+        for index in 0..self.length {
+            unsafe {
+                self.array.get_unchecked_mut(index).assume_init_drop();
+            }
+        }
+    }
+}
