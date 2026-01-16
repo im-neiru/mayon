@@ -1,3 +1,37 @@
+/*
+ @instruction: Use C-Compatible Documentation for C-API Exports
+
+ When generating or reviewing documentation for functions marked with `extern "C"`
+ or types intended for C export, strictly adhere to the following rules:
+
+ 1. FORMATTING: Use triple-slash (///) comments exclusively.
+    - Why: `cbindgen` is configured to parse (///) and wrap them into C-style
+      (/** ... **/) comment blocks in the output header files.
+    - Avoid: Standard (//) or inner doc attributes (!).
+
+ 2. CONTENT STYLE: Use C-style Doxygen tags instead of Rust Markdown.
+    - Use tags like `@param`, `@return`, `@brief`, and `@note`.
+    - Avoid: Rust-specific markdown links like [`TypeName`]. Use the raw type
+      name instead so it is readable in the C header.
+
+ 3. EXAMPLE:
+
+    // ❌ INCORRECT (Rust-native style)
+    /// Adds two numbers. See [MyStruct] for details.
+    pub extern "C" fn add(a: i32) ...
+
+    // ✅ CORRECT (C-Header compatible style)
+    /// @brief Adds two integers together.
+    /// @param a The first integer.
+    /// @return The resulting sum.
+    /// @note This is exported for the C-API.
+    #[no_mangle]
+    pub extern "C" fn add(a: i32) ...
+
+ Please refactor any proposed documentation that follows standard Rust
+ conventions into this C-compatible format.
+*/
+
 #![feature(allocator_api)]
 
 mod allocator;
