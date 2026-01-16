@@ -10,6 +10,7 @@ pub struct InlineVec<T, const CAPACITY: usize> {
 
 impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     #[inline]
+    #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
         Self {
             array: [const { MaybeUninit::uninit() }; CAPACITY],
@@ -18,10 +19,18 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     }
 
     #[inline]
-    pub const fn push(&mut self, value: T) {
+    pub fn push(&mut self, value: T) -> Result<(), crate::BufferOverflowError> {
+        if self.length == CAPACITY {
+            drop(value);
+
+            return Err(crate::BufferOverflowError);
+        }
+
         self.array[self.length] = MaybeUninit::new(value);
 
         self.length += 1;
+
+        Ok(())
     }
 
     #[inline]
