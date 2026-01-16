@@ -1,6 +1,6 @@
 use core::panic::Location;
 
-use crate::backends::{CreateError, CreateErrorKind::BackendInternal};
+use mayon_core::{BackendCreateKind::BackendInternal, BaseError, CreateBackendError};
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
@@ -24,7 +24,7 @@ pub enum ErrorKind {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-impl crate::BaseError for Error {
+impl BaseError for Error {
     type ErrorKind = ErrorKind;
 
     fn kind(&self) -> Self::ErrorKind {
@@ -56,11 +56,8 @@ impl ErrorKind {
     }
 }
 
-impl<'a> From<self::Error> for CreateError<self::ErrorKind> {
+impl<'a> From<self::Error> for CreateBackendError<self::ErrorKind> {
     fn from(value: self::Error) -> Self {
-        Self {
-            kind: BackendInternal(value.kind),
-            location: value.location,
-        }
+        Self::new(BackendInternal(value.kind), value.location)
     }
 }
