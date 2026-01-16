@@ -47,17 +47,6 @@ pub(crate) fn set_ok() -> MynFallibleResult {
 /// # Returns
 ///
 /// `MynFallibleResult::MAYON_RESULT_NULL_ARG`.
-///
-/// # Examples
-///
-/// ```
-/// use std::ffi::CStr;
-/// // construct a static CStr for the example
-/// static NAME_BYTES: &[u8] = b"buffer\0";
-/// let name = unsafe { CStr::from_bytes_with_nul_unchecked(NAME_BYTES) };
-/// let res = crate::set_null_pointer_arg(name);
-/// assert_eq!(res, crate::MynFallibleResult::MAYON_RESULT_NULL_ARG);
-/// ```
 #[inline]
 pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
     LAST_ERROR.set(Some(Error::NullArg { name }));
@@ -75,21 +64,6 @@ pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
 /// # Returns
 ///
 /// The `MynFallibleResult` value that corresponds to the recorded error.
-///
-/// # Examples
-///
-/// ```no_run
-/// // Construct or obtain a CreateBackendError<VulkanErrorKind> named `err` and pass it to set_vulkan_error.
-/// // The call updates the thread-local LAST_ERROR and yields a MynFallibleResult code.
-/// let err: CreateBackendError<VulkanErrorKind> = unimplemented!();
-/// let code = set_vulkan_error(err);
-/// assert!(matches!(
-///     code,
-///     MynFallibleResult::MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR
-///         | MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
-///         | MynFallibleResult::MAYON_RESULT_VULKAN_LOAD_ERROR
-/// ));
-/// ```
 #[inline]
 pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> MynFallibleResult {
     match error.kind() {
@@ -127,20 +101,6 @@ pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> My
 ///
 /// `*const c_char` pointer to a NUL-terminated C string with the last error message, or `null`
 /// if no error is set.
-///
-/// # Examples
-///
-/// ```
-/// use std::ffi::CStr;
-///
-/// let ptr = get_message();
-/// if ptr.is_null() {
-///     // no error
-/// } else {
-///     let msg = unsafe { CStr::from_ptr(ptr) }.to_str().unwrap();
-///     println!("last error: {}", msg);
-/// }
-/// ```
 #[inline(always)]
 pub(crate) fn get_message() -> *const c_char {
     LAST_ERROR.with_borrow(|err| {

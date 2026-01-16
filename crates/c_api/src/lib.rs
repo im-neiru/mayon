@@ -1,37 +1,3 @@
-/*
- @instruction: Use C-Compatible Documentation for C-API Exports
-
- When generating or reviewing documentation for functions marked with `extern "C"`
- or types intended for C export, strictly adhere to the following rules:
-
- 1. FORMATTING: Use triple-slash (///) comments exclusively.
-    - Why: `cbindgen` is configured to parse (///) and wrap them into C-style
-      (/** ... **/) comment blocks in the output header files.
-    - Avoid: Standard (//) or inner doc attributes (!).
-
- 2. CONTENT STYLE: Use C-style Doxygen tags instead of Rust Markdown.
-    - Use tags like `@param`, `@return`, `@brief`, and `@note`.
-    - Avoid: Rust-specific markdown links like [`TypeName`]. Use the raw type
-      name instead so it is readable in the C header.
-
- 3. EXAMPLE:
-
-    // ❌ INCORRECT (Rust-native style)
-    /// Adds two numbers. See [MyStruct] for details.
-    pub extern "C" fn add(a: i32) ...
-
-    // ✅ CORRECT (C-Header compatible style)
-    /// @brief Adds two integers together.
-    /// @param a The first integer.
-    /// @return The resulting sum.
-    /// @note This is exported for the C-API.
-    #[no_mangle]
-    pub extern "C" fn add(a: i32) ...
-
- Please refactor any proposed documentation that follows standard Rust
- conventions into this C-compatible format.
-*/
-
 #![feature(allocator_api)]
 
 mod allocator;
@@ -86,44 +52,25 @@ pub struct MynVkVersion {
 #[repr(C)]
 pub struct MynInstance(usize);
 
-/// Create a new Mayon instance using the Vulkan backend.
+/// @brief Creates a new Mayon instance using the Vulkan API as backend.
 ///
-/// # Parameters
+/// @param params Pointer to a \c MynVkBackendParams structure. Must not be \c NULL.
+/// @param allocator use to set a custom allocator.
+/// @param out_instance Pointer to storage that will receive the created Instance. Must not be \c NULL.
 ///
-/// - `params`: Pointer to a `MynVkBackendParams` structure describing Vulkan initialization parameters. Must not be `NULL`.
-/// - `allocator`: Optional pointer to a custom allocator. If `NULL`, the default allocator is used.
-/// - `out_instance`: Pointer to storage that will receive the created `MynInstance` handle. Must not be `NULL`.
+/// @return \c MAYON_RESULT_OK on success.
+/// @return A non-zero \c MynFallibleResult error code on failure.
+/// @return \c MAYON_RESULT_NULL_ARG if \p params or \p out_instance is \c NULL.
 ///
-/// # Returns
+/// @par Behavior
+/// On success, a valid Instance handle is written to \p out_instance.
+/// On failure, *\p out_instance remains unchanged and an error message is stored
+/// (retrievable via \c mayon_last_error_message()).
 ///
-/// `MAYON_RESULT_OK` on success, or a non-zero `MynFallibleResult` error code on failure.
-///
-/// # Safety
-///
-/// - `params` must point to a valid `MynVkBackendParams`.
-/// - All C string pointers inside `params` must be valid, null-terminated UTF-8 strings.
-/// - `out_instance` must point to writable, properly aligned memory for a `MynInstance`.
-/// - This function performs raw pointer dereferences and FFI calls; callers must uphold these invariants.
-///
-/// # Examples
-///
-/// ```no_run
-/// use std::ptr;
-///
-/// // Prepare C-visible params (example uses null names)
-/// let params = MynVkBackendParams {
-///     application_name: ptr::null(),
-///     application_version: MynVkVersion { major: 0, minor: 0, patch: 0 },
-///     engine_name: ptr::null(),
-///     engine_version: MynVkVersion { major: 0, minor: 0, patch: 0 },
-/// };
-///
-/// let mut instance = MynInstance(0usize);
-/// let result = unsafe {
-///     mayon_new_instance_on_vulkan(&params, ptr::null(), &mut instance)
-/// };
-/// // On a system with Vulkan available and valid params, `result` will be MAYON_RESULT_OK.
-/// ```
+/// @par Requirements
+/// - \p params must point to a valid \c MynVkBackendParams structure.
+/// - \p out_instance must point to writable, properly aligned memory.
+/// - All string pointers within \p params must be valid null-terminated UTF-8 C strings.
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
