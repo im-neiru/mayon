@@ -11,23 +11,23 @@ pub struct InlineVec<T, const CAPACITY: usize> {
 
 impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// Creates an empty InlineVec where no elements are initialized.
-    
+
     ///
-    
+
     /// # Examples
-    
+
     ///
-    
+
     /// ```
-    
+
     /// let v: InlineVec<i32, 4> = InlineVec::new();
-    
+
     /// assert_eq!(v.length(), 0);
-    
+
     /// assert_eq!(v.as_slice(), &[]);
-    
+
     /// ```
-    
+
     #[inline]
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
@@ -116,6 +116,11 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     #[inline]
     pub const fn length(&self) -> usize {
         self.length
+    }
+
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.length == 0
     }
 
     /// Provides a slice of the initialized elements in this `InlineVec`.
