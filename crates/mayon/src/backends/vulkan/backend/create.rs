@@ -112,9 +112,10 @@ impl<'s> VulkanBackendParams<'s> {
     pub fn with_target_from_rwh(
         mut self,
         display: Option<impl Into<raw_window_handle::RawDisplayHandle>>,
+        with_headless: bool,
     ) -> Result<Self, UnsupportedPlatformError> {
         if let Some(display) = display {
-            let target = TargetPlatform::from_raw_display_handle(display.into())?;
+            let target = TargetPlatform::from_raw_display_handle(display.into(), with_headless)?;
 
             self.target_platform = Some(target);
         } else {

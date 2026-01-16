@@ -1,14 +1,17 @@
+use bitflags::bitflags;
 use raw_window_handle::RawDisplayHandle;
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::Display)]
-pub enum TargetPlatform {
-    Wayland = 1,
-    Xcb = 2,
-    Xlib = 3,
-    Win32 = 4,
-    Android = 5,
-    Metal = 6,
+bitflags! {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub struct TargetPlatform: u16 {
+        const WAYLAND     = 0b0000_0001;
+        const XCB         = 0b0000_0010;
+        const XLIB        = 0b0000_0100;
+        const WIN32       = 0b0000_1000;
+        const ANDROID     = 0b0001_0000;
+        const METAL       = 0b0010_0000;
+        const HEADLESS    = 0b0100_0000;
+    }
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
@@ -19,17 +22,23 @@ impl TargetPlatform {
     #[inline]
     pub(in crate::backends) const fn from_raw_display_handle(
         handle: RawDisplayHandle,
+        with_headless: bool,
     ) -> Result<Self, UnsupportedPlatformError> {
-        match handle {
-            RawDisplayHandle::Wayland(_) => Ok(Self::Wayland),
-            RawDisplayHandle::Xcb(_) => Ok(Self::Xcb),
-            RawDisplayHandle::Xlib(_) => Ok(Self::Xlib),
-            RawDisplayHandle::Windows(_) => Ok(Self::Win32),
-            RawDisplayHandle::Android(_) => Ok(Self::Android),
-            RawDisplayHandle::AppKit(_) => Ok(Self::Metal),
-            RawDisplayHandle::UiKit(_) => Ok(Self::Metal),
+        let window = match handle {
+            RawDisplayHandle::Wayland(_) => Self::WAYLAND,
+            RawDisplayHandle::Xcb(_) => Self::XCB,
+            RawDisplayHandle::Xlib(_) => Self::XLIB,
+            RawDisplayHandle::Windows(_) => Self::WIN32,
+            RawDisplayHandle::Android(_) => Self::ANDROID,
+            RawDisplayHandle::AppKit(_) | RawDisplayHandle::UiKit(_) => Self::METAL,
 
-            _ => Err(UnsupportedPlatformError),
-        }
+            _ => return Err(UnsupportedPlatformError),
+        };
+
+        Ok(if with_headless {
+            window.union(Self::HEADLESS)
+        } else {
+            window
+        })
     }
 }
