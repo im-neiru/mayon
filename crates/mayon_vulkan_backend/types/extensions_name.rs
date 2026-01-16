@@ -14,6 +14,18 @@ impl ExtensionName {
     pub const IOS_SURFACE: Self = Self::new(c"VK_MVK_ios_surface");
     pub const MACOS_SURFACE: Self = Self::new(c"VK_MVK_macos_surface");
 
+    /// Creates an `ExtensionName` from a static C string by storing its raw pointer.
+    ///
+    /// The provided `CStr` must have a `'static` lifetime and remain valid for as long as the
+    /// resulting `ExtensionName` is used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use core::ffi::CStr;
+    /// let s = CStr::from_bytes_with_nul(b"VK_KHR_surface\0").unwrap();
+    /// let ext = ExtensionName::new(s);
+    /// ```
     #[inline]
     pub(crate) const fn new(value: &'static CStr) -> Self {
         Self(value.as_ptr())

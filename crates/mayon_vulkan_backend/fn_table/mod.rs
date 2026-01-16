@@ -27,6 +27,17 @@ pub struct FnTable {
 static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
 
 impl FnTable {
+    /// Returns the cached global function table, initializing and caching it on first use.
+    ///
+    /// On success, yields a `'static` reference to the initialized `FnTable`. Returns an error if the Vulkan library cannot be loaded.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Access the global function table (may initialize the table on first call).
+    /// let table = crate::backends::vulkan::FnTable::global().unwrap();
+    /// // Use `table` to call loaded Vulkan functions, e.g. `table.fn_create_instance`.
+    /// ```
     pub(crate) fn global() -> super::Result<&'static Self> {
         FN_TABLE.get_or_try_init(Self::new)
     }

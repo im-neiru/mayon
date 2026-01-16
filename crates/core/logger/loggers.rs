@@ -7,6 +7,18 @@ pub struct DefaultLogger;
 pub struct QuietLogger;
 
 impl Logger for DefaultLogger {
+    /// Logs a message to the global logger, preserving the call-site file, line, and provided target.
+    ///
+    /// Constructs a `log::Record` from the given `level`, `target`, caller location, and `args`, then forwards it to the global logger.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use mayon_core::logger::{DefaultLogger, Logger, Target, Level};
+    ///
+    /// let mut logger = DefaultLogger::default();
+    /// logger.log(Level::Info, Target::Backend, format_args!("initialized: {}", true));
+    ///
     #[inline]
     #[track_caller]
     fn log(&mut self, level: Level, target: Target, args: Arguments) {
@@ -33,6 +45,16 @@ impl Logger for DefaultLogger {
 }
 
 impl Logger for QuietLogger {
+    /// Silences all logging; calls to this method have no observable effect.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use mayon_core::logger::{QuietLogger, Logger, Target, Level};
+    ///
+    /// let mut logger = QuietLogger::default();
+    /// logger.log(Level::Info, Target::Backend, format_args!("initialized: {}", true));
+    ///
     #[inline(always)]
     fn log(&mut self, _: Level, _: Target, _: Arguments) {
         /* Be quiet */

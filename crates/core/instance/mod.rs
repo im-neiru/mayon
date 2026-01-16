@@ -19,6 +19,16 @@ where
     A: Allocator + 'static,
     L: Logger + 'static,
 {
+    /// Creates an `Instance` by constructing backend `B` with the provided parameters, allocator, and logger.
+    ///
+    /// # Parameters
+    /// - `params`: Backend-specific creation parameters.
+    /// - `allocator`: Allocator to use for the instance.
+    /// - `logger`: Logger to attach to the backend.
+    ///
+    /// # Returns
+    /// `Ok(Self)` containing the created instance, or `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` if backend creation fails.
+    /// ```
     pub fn new_in<'s, B>(
         params: B::Params,
         allocator: A,
@@ -37,6 +47,11 @@ impl<L> Instance<Global, L>
 where
     L: Logger + 'static,
 {
+    /// Creates a new Instance using the global allocator for backend `B`.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(Self)` if backend creation succeeds, `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` otherwise.
     #[inline]
     pub fn new<'s, B>(
         params: B::Params,

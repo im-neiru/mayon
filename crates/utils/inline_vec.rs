@@ -10,6 +10,24 @@ pub struct InlineVec<T, const CAPACITY: usize> {
 }
 
 impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
+    /// Creates an empty InlineVec where no elements are initialized.
+    
+    ///
+    
+    /// # Examples
+    
+    ///
+    
+    /// ```
+    
+    /// let v: InlineVec<i32, 4> = InlineVec::new();
+    
+    /// assert_eq!(v.length(), 0);
+    
+    /// assert_eq!(v.as_slice(), &[]);
+    
+    /// ```
+    
     #[inline]
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
@@ -19,6 +37,18 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
         }
     }
 
+    /// Creates an InlineVec containing the elements of `value` in order.
+    ///
+    /// The returned container has `length == SIZE`. The remaining capacity (if any)
+    /// is left uninitialized.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let v = InlineVec::<i32, 4>::from_array([10, 20]);
+    /// assert_eq!(v.length(), 2);
+    /// assert_eq!(v.as_slice(), &[10, 20]);
+    /// ```
     #[inline]
     pub fn from_array<const SIZE: usize>(value: [T; SIZE]) -> Self {
         let mut array = [const { MaybeUninit::uninit() }; CAPACITY];
@@ -35,6 +65,23 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
         }
     }
 
+    /// Appends `value` to the vector if there is remaining capacity.
+    ///
+    /// If the inline buffer is full, `value` is dropped and a `crate::BufferOverflowError` is returned.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` on success, `Err(crate::BufferOverflowError)` if the vector is at full capacity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut v = InlineVec::<i32, 2>::new();
+    /// v.push(10).unwrap();
+    /// v.push(20).unwrap();
+    /// assert_eq!(v.length(), 2);
+    /// assert!(v.push(30).is_err()); // value is dropped and an error is returned
+    /// ```
     #[inline]
     pub fn push(&mut self, value: T) -> Result<(), crate::BufferOverflowError> {
         if self.length == CAPACITY {
@@ -50,11 +97,39 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
         Ok(())
     }
 
+    /// Number of initialized elements stored in the `InlineVec`.
+    ///
+    /// # Returns
+    ///
+    /// The current number of initialized elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crates::utils::inline_vec::InlineVec;
+    ///
+    /// let mut v: InlineVec<i32, 4> = InlineVec::new();
+    /// assert_eq!(v.length(), 0);
+    /// v.push(10).unwrap();
+    /// assert_eq!(v.length(), 1);
+    /// ```
     #[inline]
     pub const fn length(&self) -> usize {
         self.length
     }
 
+    /// Provides a slice of the initialized elements in this `InlineVec`.
+    ///
+    /// The returned slice borrows the elements at indices `0..self.length`, reflecting only the initialized portion of the internal storage.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::utils::inline_vec::InlineVec;
+    ///
+    /// let v = InlineVec::from_array([1, 2, 3]);
+    /// assert_eq!(v.as_slice(), &[1, 2, 3]);
+    /// ```
     #[inline]
     pub const fn as_slice(&self) -> &[T] {
         unsafe { slice::from_raw_parts(self.array.as_ptr().cast(), self.length) }
@@ -64,6 +139,20 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
 impl<T, const CAPACITY: usize> Index<usize> for InlineVec<T, CAPACITY> {
     type Output = T;
 
+    /// Accesses the element at the given index and returns a reference to it.
+    ///
+    /// Returns a reference to the initialized element at `index`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index >= self.length`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let v = InlineVec::from_array([10, 20, 30]);
+    /// assert_eq!(v[1], 20);
+    /// ```
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         if index >= self.length {
@@ -82,6 +171,15 @@ impl<T, const CAPACITY: usize> Index<usize> for InlineVec<T, CAPACITY> {
 }
 
 impl<T, const CAPACITY: usize> IndexMut<usize> for InlineVec<T, CAPACITY> {
+    /// Accesses the element at the given index for mutation, panicking if the index is out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut v = InlineVec::<i32, 3>::from_array([1, 2, 3]);
+    /// v[1] += 10;
+    /// assert_eq!(v.as_slice(), &[1, 12, 3]);
+    /// ```
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if index >= self.length {
@@ -100,6 +198,31 @@ impl<T, const CAPACITY: usize> IndexMut<usize> for InlineVec<T, CAPACITY> {
 }
 
 impl<T, const CAPACITY: usize> Drop for InlineVec<T, CAPACITY> {
+    /// Drops all initialized elements held by the `InlineVec`.
+    ///
+    /// This destructor only drops the elements that have been initialized (indices `0..length`).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::atomic::{AtomicUsize, Ordering};
+    ///
+    /// static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
+    ///
+    /// struct Tracker;
+    /// impl Drop for Tracker {
+    ///     fn drop(&mut self) {
+    ///         DROP_COUNT.fetch_add(1, Ordering::SeqCst);
+    ///     }
+    /// }
+    ///
+    /// {
+    ///     let v = InlineVec::from_array([Tracker, Tracker]); // two initialized elements
+    ///     assert_eq!(v.length(), 2);
+    /// } // `v` is dropped here; both Tracker instances should have been dropped
+    ///
+    /// assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 2);
+    /// ```
     fn drop(&mut self) {
         for index in 0..self.length {
             unsafe {
@@ -186,6 +309,29 @@ mod tests {
         struct Tracker;
 
         impl Drop for Tracker {
+            /// Increments the global drop counter when a Tracker value is dropped.
+            ///
+            /// # Examples
+            ///
+            /// ```
+            /// use std::sync::atomic::{AtomicUsize, Ordering};
+            ///
+            /// static COUNTER: AtomicUsize = AtomicUsize::new(0);
+            ///
+            /// struct Tracker;
+            ///
+            /// impl Drop for Tracker {
+            ///     fn drop(&mut self) {
+            ///         COUNTER.fetch_add(1, Ordering::SeqCst);
+            ///     }
+            /// }
+            ///
+            /// {
+            ///     let _t = Tracker;
+            /// } // `_t` is dropped here
+            ///
+            /// assert_eq!(COUNTER.load(Ordering::SeqCst), 1);
+            /// ```
             fn drop(&mut self) {
                 DROP_COUNTER.fetch_add(1, Ordering::SeqCst);
             }

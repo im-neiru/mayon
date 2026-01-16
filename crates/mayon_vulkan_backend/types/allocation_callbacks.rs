@@ -83,6 +83,22 @@ where
         Some(ptr.cast())
     }
 
+    /// Frees memory previously allocated by the given allocator using the allocator's stored layout.
+    ///
+    /// The caller must ensure `allocator` points to the allocator instance that originally allocated
+    /// `memory`, and that `memory` was returned by that allocator; otherwise the behavior is undefined.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::ptr::NonNull;
+    /// use std::ffi::c_void;
+    ///
+    /// // SAFETY: `allocator_ptr` and `memory_ptr` must be valid and come from the same allocator.
+    /// unsafe {
+    ///     handle_free(allocator_ptr, memory_ptr);
+    /// }
+    /// ```
     #[allow(unsafe_op_in_unsafe_fn)]
     unsafe extern "system" fn handle_free(allocator: NonNull<A>, memory: NonNull<c_void>) {
         let allocator = allocator.as_ref();

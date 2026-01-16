@@ -21,6 +21,31 @@ where
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
 
+    /// Creates a new Vulkan backend instance configured by `params`.
+    ///
+    /// The function constructs a Vulkan instance using the provided application/engine
+    /// metadata and optional platform surface extensions from `params.target_platform`,
+    /// installs allocation callbacks that use `allocator`, and logs successful creation
+    /// to `logger`. It returns the constructed `VulkanBackend` on success.
+    ///
+    /// Panics if the internal extension-name buffer capacity is exceeded.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(Self)` with the created `VulkanBackend` on success, `Err(CreateBackendError<...>)`
+    /// if the global Vulkan function table cannot be obtained or instance creation fails.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use crate::backends::vulkan::{VulkanBackend, VulkanBackendParams};
+    /// # use crate::alloc::DefaultAllocator;
+    /// # use crate::logging::StdLogger;
+    /// let allocator = DefaultAllocator::default();
+    /// let mut logger = StdLogger::new();
+    /// let params = VulkanBackendParams::default();
+    /// let backend = VulkanBackend::create(&allocator, &mut logger, params).unwrap();
+    /// ```
     fn create<'a>(
         allocator: &A,
         logger: &mut L,
@@ -72,6 +97,18 @@ pub struct VulkanBackendParams<'s> {
 }
 
 impl Default for VulkanBackendParams<'_> {
+    /// Creates a default `VulkanBackendParams` with application and engine versions set to 0.1.0 and no names or target platform.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let params = VulkanBackendParams::default();
+    /// assert!(params.application_name.is_none());
+    /// assert_eq!(params.application_version, VulkanVersion::new(0, 1, 0));
+    /// assert!(params.engine_name.is_none());
+    /// assert_eq!(params.engine_version, VulkanVersion::new(0, 1, 0));
+    /// assert!(params.target_platform.is_none());
+    /// ```
     fn default() -> Self {
         let v0_1 = VulkanVersion::new(0, 1, 0);
 
@@ -107,13 +144,45 @@ impl<'s> VulkanBackendParams<'s> {
         self
     }
 
+    /// Sets the engine version in the parameters and returns the updated params.
+    ///
+    /// # Parameters
+    ///
+    /// - `engine_version`: The engine version to store in the params.
+    ///
+    /// # Returns
+    ///
+    /// The updated `VulkanBackendParams` with `engine_version` set to the provided value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let params = crate::backends::vulkan::VulkanBackendParams::default()
+    ///     .with_engine_version((1u32, 2u32, 3u32));
+    /// assert_eq!(params.engine_version, crate::backends::vulkan::VulkanVersion::new(1, 2, 3));
+    /// ```
     #[inline]
     pub fn with_engine_version(mut self, engine_version: impl Into<VulkanVersion>) -> Self {
         self.engine_version = engine_version.into();
         self
     }
 
-    #[inline]
+    /// Sets the backend's target platform from a raw-window-handle display and returns the updated params.
+    ///
+    /// If `display` is `Some`, converts it to a `TargetPlatform` using `TargetPlatform::from_raw_display_handle`
+    /// with `with_headless` and stores it in `target_platform`. If `display` is `None`, clears `target_platform`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `UnsupportedPlatformError` if the provided display handle is not supported on the current platform.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let params = VulkanBackendParams::default();
+    /// let params = params.with_target_from_rwh::<raw_window_handle::RawDisplayHandle>(None, false).unwrap();
+    /// assert!(params.target_platform.is_none());
+    /// ```
     pub fn with_target_from_rwh(
         mut self,
         display: Option<impl Into<raw_window_handle::RawDisplayHandle>>,
@@ -140,6 +209,16 @@ pub struct VulkanVersion {
 }
 
 impl VulkanVersion {
+    /// Creates a VulkanVersion from its major, minor, and patch components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let v = VulkanVersion::new(1, 2, 3);
+    /// assert_eq!(v.major, 1);
+    /// assert_eq!(v.minor, 2);
+    /// assert_eq!(v.patch, 3);
+    /// ```
     pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
         Self {
             major,
@@ -148,6 +227,16 @@ impl VulkanVersion {
         }
     }
 
+    /// Encodes the version components into a single 32-bit Vulkan-style version value.
+    ///
+    /// The bits are laid out as `(major << 22) | (minor << 12) | patch`, matching Vulkan's packed version format.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let v = VulkanVersion::new(1, 2, 3);
+    /// assert_eq!(v.raw(), (1u32 << 22) | (2u32 << 12) | 3u32);
+    /// ```
     pub(crate) const fn raw(&self) -> u32 {
         (self.major << 22) | (self.minor << 12) | self.patch
     }
@@ -161,12 +250,43 @@ impl From<(u32, u32, u32)> for VulkanVersion {
 }
 
 impl From<(u32, u32)> for VulkanVersion {
-    #[inline]
+    /// Creates a VulkanVersion from a `(major, minor)` pair with `patch` set to `0`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let v = VulkanVersion::from((1u32, 2u32));
+    /// assert_eq!(v, VulkanVersion::new(1, 2, 0));
+    /// ```
     fn from((major, minor): (u32, u32)) -> Self {
         Self::new(major, minor, 0)
     }
 }
 
+/// Appends the Vulkan surface extension names required for the specified target platforms.
+///
+/// Given a set of target platforms, pushes the corresponding `ExtensionName` entries into
+/// `buffer` for each matching platform (or the generic `SURFACE` entry for `HEADLESS`).
+///
+/// # Parameters
+///
+/// - `targets`: Target platforms to inspect for required surface extensions.
+/// - `buffer`: Inline vector to receive the extension names; must have sufficient capacity.
+///
+/// # Returns
+///
+/// `Ok(())` on success, `Err(BufferOverflowError)` if `buffer` does not have enough capacity.
+///
+/// # Examples
+///
+/// ```
+/// use inline_vec::InlineVec;
+/// // types `TargetPlatform` and `ExtensionName` are assumed to be in scope for the example
+/// let targets = TargetPlatform::WIN32;
+/// let mut buf = InlineVec::<ExtensionName, 4>::new();
+/// let res = append_extension_names(&targets, &mut buf);
+/// assert!(res.is_ok());
+/// ```
 #[inline(always)]
 fn append_extension_names<const CAPACITY: usize>(
     targets: &TargetPlatform,

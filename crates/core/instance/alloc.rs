@@ -7,6 +7,17 @@ use std::alloc::handle_alloc_error;
 
 use crate::Backend;
 
+/// Allocates memory for `value` using `allocator` and stores the value in the allocated slot.
+///
+/// # Safety
+///
+/// - `allocator` must be a valid allocator able to allocate a block with `Layout::new::<V>()`.
+/// - The returned pointer must be deallocated using the same allocator and layout to avoid undefined behavior.
+/// - The caller is responsible for ensuring the allocated value is dropped exactly once.
+///
+/// # Returns
+///
+/// A `NonNull<V>` pointing to the stored value.
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where
