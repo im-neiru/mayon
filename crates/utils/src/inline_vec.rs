@@ -1,6 +1,7 @@
 use core::{
     mem::MaybeUninit,
     ops::{Index, IndexMut},
+    ptr::slice_from_raw_parts,
 };
 
 pub struct InlineVec<T, const CAPACITY: usize> {
@@ -36,6 +37,10 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     #[inline]
     pub const fn length(&self) -> usize {
         self.length
+    }
+
+    pub const fn as_slice_ptr(&self) -> *const [T] {
+        slice_from_raw_parts(self.array.as_ptr().cast(), self.length)
     }
 }
 
