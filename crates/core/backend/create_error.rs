@@ -49,7 +49,7 @@ where
     #[cfg(feature = "error_location")]
     #[inline]
     #[track_caller]
-    pub(super) const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
+    pub const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
         Err(CreateBackendError {
             kind: self,
             location: Location::caller(),
@@ -58,7 +58,7 @@ where
 
     #[cfg(not(feature = "error_location"))]
     #[inline]
-    pub(super) const fn into_result<T>(self) -> self::Result<T> {
+    pub const fn into_result<T>(self) -> self::Result<T> {
         Err(CreateBackendError { kind: self })
     }
 }
