@@ -23,6 +23,16 @@ pub(crate) struct ApplicationInfo<'a> {
 const VULKAN_API_VERSION: u32 = VulkanVersion::new(1, 2, 0).raw();
 
 impl ApplicationInfo<'_> {
+    /// Builds an FFI-compatible ApplicationInfo from the provided VulkanBackendParams.
+    ///
+    /// The returned struct has its `struct_type` set to `StructureType::ApplicationInfo`,
+    /// `next` set to null, optional `application_name` and `engine_name` converted to raw
+    /// C string pointers (or null when absent), version fields populated from the
+    /// provided version wrappers, and `api_version` set to the crate's `VULKAN_API_VERSION`.
+    ///
+    /// # Returns
+    ///
+    /// An `ApplicationInfo` populated from the provided parameters and ready for use in Vulkan FFI.
     pub(crate) fn new(
         VulkanBackendParams {
             application_name,

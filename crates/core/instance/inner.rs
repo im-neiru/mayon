@@ -32,6 +32,20 @@ where
     A: Allocator + 'static,
     L: Logger + 'static,
 {
+    /// Allocates and initializes a new ArcInner containing the given allocator, logger, and a backend created from `params`.
+    ///
+    /// The returned ArcInner starts with a reference count of 1 and holds the backend produced by `B::create`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CreateBackendError` if backend creation fails.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // `A` implements `Allocator`, `L` implements `Logger`, and `B` implements `Backend + CreateBackend<'_, A, L>`.
+    /// let arc = ArcInner::new::<B>(allocator, logger, params)?;
+    /// ```
     pub(super) fn new<'s, B>(
         allocator: A,
         logger: L,

@@ -7,6 +7,32 @@ use std::alloc::handle_alloc_error;
 
 use crate::Backend;
 
+/// Allocates memory for `value` using `allocator` and stores the value in the allocated slot.
+///
+/// # Safety
+///
+/// - `allocator` must be a valid allocator able to allocate a block with `Layout::new::<V>()`.
+/// - The returned pointer must be deallocated using the same allocator and layout to avoid undefined behavior.
+/// - The caller is responsible for ensuring the allocated value is dropped exactly once.
+///
+/// # Returns
+///
+/// A `NonNull<V>` pointing to the stored value.
+///
+/// # Examples
+///
+/// ```
+/// use std::alloc::Global;
+/// use core::ptr::NonNull;
+///
+/// // Allocate an integer with the global allocator, read it, then deallocate.
+/// let allocator = Global;
+/// let ptr: NonNull<u32> = unsafe { allocate(&allocator, 42u32) };
+/// assert_eq!(unsafe { ptr.as_ref() }, &42u32);
+/// unsafe {
+///     allocator.deallocate(ptr.cast(), std::alloc::Layout::new::<u32>());
+/// }
+/// ```
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where

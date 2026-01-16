@@ -15,6 +15,24 @@ pub struct Win32SurfaceCreateInfo<'a> {
 }
 
 impl Win32SurfaceCreateInfo<'_> {
+    /// Creates a `Win32SurfaceCreateInfo` value from a `Win32WindowHandle`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use core::num::NonZeroIsize;
+    /// use raw_window_handle::Win32WindowHandle;
+    ///
+    /// // Construct a sample window handle (fields are illustrative)
+    /// let handle = Win32WindowHandle {
+    ///     hinstance: NonZeroIsize::new(1),
+    ///     hwnd: NonZeroIsize::new(2).unwrap(),
+    ///     ..Win32WindowHandle::empty()
+    /// };
+    ///
+    /// let info = Win32SurfaceCreateInfo::from_handle(&handle);
+    /// assert_eq!(info.hwnd, handle.hwnd);
+    /// ```
     #[inline]
     const fn from_handle(handle: &Win32WindowHandle) -> Self {
         let &Win32WindowHandle {

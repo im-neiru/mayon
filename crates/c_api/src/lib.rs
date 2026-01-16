@@ -52,25 +52,44 @@ pub struct MynVkVersion {
 #[repr(C)]
 pub struct MynInstance(usize);
 
-/// @brief Creates a new Mayon instance using the Vulkan API as backend.
+/// Create a new Mayon instance using the Vulkan backend.
 ///
-/// @param params Pointer to a \c MynVkBackendParams structure. Must not be \c NULL.
-/// @param allocator use to set a custom allocator.
-/// @param out_instance Pointer to storage that will receive the created Instance. Must not be \c NULL.
+/// # Parameters
 ///
-/// @return \c MAYON_RESULT_OK on success.
-/// @return A non-zero \c MynFallibleResult error code on failure.
-/// @return \c MAYON_RESULT_NULL_ARG if \p params or \p out_instance is \c NULL.
+/// - `params`: Pointer to a `MynVkBackendParams` structure describing Vulkan initialization parameters. Must not be `NULL`.
+/// - `allocator`: Optional pointer to a custom allocator. If `NULL`, the default allocator is used.
+/// - `out_instance`: Pointer to storage that will receive the created `MynInstance` handle. Must not be `NULL`.
 ///
-/// @par Behavior
-/// On success, a valid Instance handle is written to \p out_instance.
-/// On failure, *\p out_instance remains unchanged and an error message is stored
-/// (retrievable via \c mayon_last_error_message()).
+/// # Returns
 ///
-/// @par Requirements
-/// - \p params must point to a valid \c MynVkBackendParams structure.
-/// - \p out_instance must point to writable, properly aligned memory.
-/// - All string pointers within \p params must be valid null-terminated UTF-8 C strings.
+/// `MAYON_RESULT_OK` on success, or a non-zero `MynFallibleResult` error code on failure.
+///
+/// # Safety
+///
+/// - `params` must point to a valid `MynVkBackendParams`.
+/// - All C string pointers inside `params` must be valid, null-terminated UTF-8 strings.
+/// - `out_instance` must point to writable, properly aligned memory for a `MynInstance`.
+/// - This function performs raw pointer dereferences and FFI calls; callers must uphold these invariants.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::ptr;
+///
+/// // Prepare C-visible params (example uses null names)
+/// let params = MynVkBackendParams {
+///     application_name: ptr::null(),
+///     application_version: MynVkVersion { major: 0, minor: 0, patch: 0 },
+///     engine_name: ptr::null(),
+///     engine_version: MynVkVersion { major: 0, minor: 0, patch: 0 },
+/// };
+///
+/// let mut instance = MynInstance(0usize);
+/// let result = unsafe {
+///     mayon_new_instance_on_vulkan(&params, ptr::null(), &mut instance)
+/// };
+/// // On a system with Vulkan available and valid params, `result` will be MAYON_RESULT_OK.
+/// ```
 #[unsafe(no_mangle)]
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
