@@ -9,13 +9,13 @@ pub struct CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    pub(crate) kind: CreateErrorKind<B>,
+    pub(crate) kind: BackendCreateKind<B>,
     #[cfg(feature = "error_location")]
     pub(crate) location: &'static Location<'static>,
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
-pub enum CreateErrorKind<B>
+pub enum BackendCreateKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
@@ -29,7 +29,7 @@ impl<B> crate::BaseError for CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    type ErrorKind = CreateErrorKind<B>;
+    type ErrorKind = BackendCreateKind<B>;
 
     fn kind(&self) -> Self::ErrorKind {
         self.kind
@@ -42,7 +42,7 @@ where
     }
 }
 
-impl<B> CreateErrorKind<B>
+impl<B> BackendCreateKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
