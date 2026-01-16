@@ -1,10 +1,5 @@
-#![feature(allocator_api)]
-#![feature(once_cell_try)]
+pub use mayon_core::*;
 
-pub mod backends;
-mod errors;
-mod instance;
-
-pub use instance::{Instance, logger};
-
-pub use errors::BaseError;
+pub mod backends {
+    pub use mayon_vulkan_backend as vulkan;
+}
