@@ -1,6 +1,6 @@
 use core::alloc::Allocator;
 
-use crate::{BaseError, backends::CreateError, logger::Logger};
+use crate::{BaseError, CreateBackendError, logger::Logger};
 
 pub trait Backend {}
 
@@ -18,7 +18,7 @@ where
         allocator: &A,
         logger: &mut L,
         params: Self::Params,
-    ) -> Result<Self, CreateError<<Self::Error as BaseError>::ErrorKind>>
+    ) -> Result<Self, CreateBackendError<<Self::Error as BaseError>::ErrorKind>>
     where
         Self: Sized;
 }

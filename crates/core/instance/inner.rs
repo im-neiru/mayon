@@ -6,10 +6,7 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
 
-use crate::{
-    BaseError,
-    backends::{Backend, CreateBackend, CreateError},
-};
+use crate::{Backend, BaseError, CreateBackend, CreateBackendError};
 
 use super::{
     alloc::{BackendBox, allocate, deallocate},
@@ -42,7 +39,7 @@ where
         allocator: A,
         logger: L,
         params: B::Params,
-    ) -> Result<Self, CreateError<<B::Error as BaseError>::ErrorKind>>
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
     where
         B: Backend + CreateBackend<'s, A, L> + 'static,
     {

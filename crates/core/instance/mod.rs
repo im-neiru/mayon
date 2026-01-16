@@ -5,10 +5,7 @@ pub mod logger;
 use core::alloc::Allocator;
 use std::alloc::Global;
 
-use crate::{
-    BaseError,
-    backends::{Backend, CreateBackend, CreateError},
-};
+use crate::{Backend, BaseError, CreateBackend, CreateBackendError};
 
 use inner::ArcInner;
 
@@ -27,7 +24,7 @@ where
         params: B::Params,
         allocator: A,
         logger: L,
-    ) -> Result<Self, CreateError<<B::Error as BaseError>::ErrorKind>>
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
     where
         B: Backend + CreateBackend<'s, A, L> + 'static,
     {
@@ -45,7 +42,7 @@ where
     pub fn new<'s, B>(
         params: B::Params,
         logger: L,
-    ) -> Result<Self, CreateError<<B::Error as BaseError>::ErrorKind>>
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
     where
         B: Backend + CreateBackend<'s, Global, L> + 'static,
     {

@@ -5,7 +5,7 @@ use core::{
 };
 use std::alloc::handle_alloc_error;
 
-use crate::backends::Backend;
+use crate::Backend;
 
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>

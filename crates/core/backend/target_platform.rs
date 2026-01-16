@@ -20,7 +20,7 @@ pub struct UnsupportedPlatformError;
 
 impl TargetPlatform {
     #[inline]
-    pub(in crate::backends) const fn from_raw_display_handle(
+    pub const fn from_raw_display_handle(
         handle: RawDisplayHandle,
         with_headless: bool,
     ) -> Result<Self, UnsupportedPlatformError> {

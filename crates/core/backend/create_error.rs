@@ -5,7 +5,7 @@ use core::{
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
-pub struct CreateError<B>
+pub struct CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
@@ -25,7 +25,7 @@ where
     BackendInternal(B),
 }
 
-impl<B> crate::BaseError for CreateError<B>
+impl<B> crate::BaseError for CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
@@ -49,8 +49,8 @@ where
     #[cfg(feature = "error_location")]
     #[inline]
     #[track_caller]
-    pub(super) const fn into_result<T>(self) -> Result<T, self::CreateError<B>> {
-        Err(CreateError {
+    pub(super) const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
+        Err(CreateBackendError {
             kind: self,
             location: Location::caller(),
         })
@@ -59,6 +59,6 @@ where
     #[cfg(not(feature = "error_location"))]
     #[inline]
     pub(super) const fn into_result<T>(self) -> self::Result<T> {
-        Err(CreateError { kind: self })
+        Err(CreateBackendError { kind: self })
     }
 }
