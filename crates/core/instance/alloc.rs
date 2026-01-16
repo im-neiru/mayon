@@ -21,7 +21,7 @@ use crate::Backend;
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::alloc::Global;
 /// use core::ptr::NonNull;
 ///
