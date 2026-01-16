@@ -14,11 +14,11 @@ impl Logger for DefaultLogger {
     /// # Examples
     ///
     /// ```
-    /// use crate::logger::{DefaultLogger, Level};
+    /// # use mayon_core::logger::{DefaultLogger, Logger, Target, Level};
     ///
     /// let mut logger = DefaultLogger::default();
-    /// logger.log(Level::Info, "app".into(), format_args!("initialized: {}", true));
-    /// ```
+    /// logger.log(Level::Info, Target::Backend, format_args!("initialized: {}", true));
+    ///
     #[inline]
     #[track_caller]
     fn log(&mut self, level: Level, target: Target, args: Arguments) {
@@ -50,9 +50,11 @@ impl Logger for QuietLogger {
     /// # Examples
     ///
     /// ```
+    /// # use mayon_core::logger::{QuietLogger, Logger, Target, Level};
+    ///
     /// let mut logger = QuietLogger::default();
-    /// logger.log(Level::Info, Target::ModulePath, format_args!("ignored"));
-    /// ```
+    /// logger.log(Level::Info, Target::Backend, format_args!("initialized: {}", true));
+    ///
     #[inline(always)]
     fn log(&mut self, _: Level, _: Target, _: Arguments) {
         /* Be quiet */

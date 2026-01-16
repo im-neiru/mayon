@@ -28,12 +28,6 @@ where
     ///
     /// # Returns
     /// `Ok(Self)` containing the created instance, or `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` if backend creation fails.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// // Given a backend type `MyBackend` that implements `Backend` and `CreateBackend<'_, Global, _>`:
-    /// // let instance = Instance::new_in::<MyBackend>(params, std::alloc::Global, logger).unwrap();
     /// ```
     pub fn new_in<'s, B>(
         params: B::Params,
@@ -62,12 +56,13 @@ where
     /// # Examples
     ///
     /// ```no_run
-    /// # use crate::Instance;
-    /// # use crate::Global;
-    /// # // `MyBackend` is a placeholder for a type that implements `Backend` + `CreateBackend<'_, Global, _>`.
-    /// let params = /* B::Params value */;
-    /// let logger = /* logger value */;
-    /// let instance = Instance::<Global, _>::new::<MyBackend>(params, logger);
+    /// let instance = Instance::new::<'static, VulkanBackend>(
+    ///     VulkanBackendParams::default()
+    ///         .with_application_name(c"Mayon")
+    ///         .with_engine_name(c"Mayon Engine")
+    ///         .with_application_version((1, 0)),
+    ///     DefaultLogger
+    /// ).unwrap();
     /// ```
     #[inline]
     pub fn new<'s, B>(

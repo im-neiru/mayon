@@ -29,15 +29,6 @@ impl TargetPlatform {
     /// # Returns
     ///
     /// `Ok` with the matching platform flag (and `HEADLESS` if requested); `Err(UnsupportedPlatformError)` if the handle is not supported.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let handle = raw_window_handle::RawDisplayHandle::Wayland(raw_window_handle::WaylandDisplayHandle::empty());
-    /// let platform = TargetPlatform::from_raw_display_handle(handle, true).unwrap();
-    /// assert!(platform.contains(TargetPlatform::WAYLAND));
-    /// assert!(platform.contains(TargetPlatform::HEADLESS));
-    /// ```
     #[inline]
     pub const fn from_raw_display_handle(
         handle: RawDisplayHandle,
