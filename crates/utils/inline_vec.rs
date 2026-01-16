@@ -4,6 +4,8 @@ use core::{
     slice,
 };
 
+use crate::BufferOverflowError;
+
 pub struct InlineVec<T, const CAPACITY: usize> {
     array: [MaybeUninit<T>; CAPACITY],
     length: usize,
@@ -40,24 +42,27 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// ```
     /// # use utils::InlineVec;
     ///
-    /// let v = InlineVec::<i32, 4>::from_array([10, 20]);
+    /// let v = InlineVec::<i32, 4>::from_array([10, 20]).unwrap();
     /// assert_eq!(v.length(), 2);
     /// assert_eq!(v.as_slice(), &[10, 20]);
     /// ```
     #[inline]
-    pub fn from_array<const SIZE: usize>(value: [T; SIZE]) -> Self {
+    pub fn from_array<const SIZE: usize>(value: [T; SIZE]) -> Result<Self, BufferOverflowError> {
+        if SIZE <= CAPACITY {
+            return Err(BufferOverflowError);
+        }
+
         let mut array = [const { MaybeUninit::uninit() }; CAPACITY];
 
         for (index, element) in value.into_iter().enumerate() {
             let dest = unsafe { array.get_unchecked_mut(index) };
-
             *dest = MaybeUninit::new(element);
         }
 
-        Self {
+        Ok(Self {
             array,
             length: SIZE,
-        }
+        })
     }
 
     /// Appends `value` to the vector if there is remaining capacity.
