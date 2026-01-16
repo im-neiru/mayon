@@ -1,7 +1,7 @@
 use core::{
     mem::MaybeUninit,
     ops::{Index, IndexMut},
-    ptr::slice_from_raw_parts,
+    slice,
 };
 
 pub struct InlineVec<T, const CAPACITY: usize> {
@@ -55,8 +55,9 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
         self.length
     }
 
-    pub const fn as_slice_ptr(&self) -> *const [T] {
-        slice_from_raw_parts(self.array.as_ptr().cast(), self.length)
+    #[inline]
+    pub const fn as_slice(&self) -> &[T] {
+        unsafe { slice::from_raw_parts(self.array.as_ptr().cast(), self.length) }
     }
 }
 
@@ -154,16 +155,14 @@ mod tests {
     }
 
     #[test]
-    fn as_slice_ptr_test() {
+    fn as_slice_test() {
         let mut vec: InlineVec<u32, 3> = InlineVec::new();
         vec.push(5).unwrap();
         vec.push(10).unwrap();
 
-        let slice_ptr = vec.as_slice_ptr();
-        unsafe {
-            let slice: &[u32] = &*slice_ptr;
-            assert_eq!(slice, &[5, 10]);
-        }
+        let slice = vec.as_slice();
+
+        assert_eq!(slice, &[5, 10]);
     }
 
     #[test]
