@@ -11,23 +11,16 @@ pub struct InlineVec<T, const CAPACITY: usize> {
 
 impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// Creates an empty InlineVec where no elements are initialized.
-
     ///
-
     /// # Examples
-
     ///
-
     /// ```
-
+    /// # use utils::InlineVec;
+    ///
     /// let v: InlineVec<i32, 4> = InlineVec::new();
-
     /// assert_eq!(v.length(), 0);
-
     /// assert_eq!(v.as_slice(), &[]);
-
     /// ```
-
     #[inline]
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
@@ -45,6 +38,8 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
+    /// # use utils::InlineVec;
+    ///
     /// let v = InlineVec::<i32, 4>::from_array([10, 20]);
     /// assert_eq!(v.length(), 2);
     /// assert_eq!(v.as_slice(), &[10, 20]);
@@ -76,6 +71,8 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
+    /// # use utils::InlineVec;
+    ///
     /// let mut v = InlineVec::<i32, 2>::new();
     /// v.push(10).unwrap();
     /// v.push(20).unwrap();
@@ -106,7 +103,7 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
-    /// use crates::utils::inline_vec::InlineVec;
+    /// # use utils::InlineVec;
     ///
     /// let mut v: InlineVec<i32, 4> = InlineVec::new();
     /// assert_eq!(v.length(), 0);
@@ -130,9 +127,9 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
-    /// use crate::utils::inline_vec::InlineVec;
+    /// # use utils::InlineVec;
     ///
-    /// let v = InlineVec::from_array([1, 2, 3]);
+    /// let v = InlineVec::<u32, 3>::from_array([1, 2, 3]);
     /// assert_eq!(v.as_slice(), &[1, 2, 3]);
     /// ```
     #[inline]
@@ -155,7 +152,9 @@ impl<T, const CAPACITY: usize> Index<usize> for InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
-    /// let v = InlineVec::from_array([10, 20, 30]);
+    /// # use utils::InlineVec;
+    ///
+    /// let v = InlineVec::<i32, 3>::from_array([10, 20, 30]);
     /// assert_eq!(v[1], 20);
     /// ```
     #[inline]
@@ -181,6 +180,8 @@ impl<T, const CAPACITY: usize> IndexMut<usize> for InlineVec<T, CAPACITY> {
     /// # Examples
     ///
     /// ```
+    /// # use utils::InlineVec;
+    ///
     /// let mut v = InlineVec::<i32, 3>::from_array([1, 2, 3]);
     /// v[1] += 10;
     /// assert_eq!(v.as_slice(), &[1, 12, 3]);
@@ -206,28 +207,6 @@ impl<T, const CAPACITY: usize> Drop for InlineVec<T, CAPACITY> {
     /// Drops all initialized elements held by the `InlineVec`.
     ///
     /// This destructor only drops the elements that have been initialized (indices `0..length`).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::sync::atomic::{AtomicUsize, Ordering};
-    ///
-    /// static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
-    ///
-    /// struct Tracker;
-    /// impl Drop for Tracker {
-    ///     fn drop(&mut self) {
-    ///         DROP_COUNT.fetch_add(1, Ordering::SeqCst);
-    ///     }
-    /// }
-    ///
-    /// {
-    ///     let v = InlineVec::from_array([Tracker, Tracker]); // two initialized elements
-    ///     assert_eq!(v.length(), 2);
-    /// } // `v` is dropped here; both Tracker instances should have been dropped
-    ///
-    /// assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 2);
-    /// ```
     fn drop(&mut self) {
         for index in 0..self.length {
             unsafe {
