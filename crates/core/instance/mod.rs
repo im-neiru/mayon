@@ -1,11 +1,10 @@
 mod alloc;
 mod inner;
-pub mod logger;
 
 use core::alloc::Allocator;
 use std::alloc::Global;
 
-use crate::{Backend, BaseError, CreateBackend, CreateBackendError};
+use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logger};
 
 use inner::ArcInner;
 
@@ -13,12 +12,12 @@ use inner::ArcInner;
 pub struct Instance<A, L>(ArcInner<A, L>)
 where
     A: Allocator + 'static,
-    L: logger::Logger + 'static;
+    L: Logger + 'static;
 
 impl<A, L> Instance<A, L>
 where
     A: Allocator + 'static,
-    L: logger::Logger + 'static,
+    L: Logger + 'static,
 {
     pub fn new_in<'s, B>(
         params: B::Params,
@@ -36,7 +35,7 @@ where
 
 impl<L> Instance<Global, L>
 where
-    L: logger::Logger + 'static,
+    L: Logger + 'static,
 {
     #[inline]
     pub fn new<'s, B>(

@@ -6,12 +6,9 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
 
-use crate::{Backend, BaseError, CreateBackend, CreateBackendError};
+use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logger};
 
-use super::{
-    alloc::{BackendBox, allocate, deallocate},
-    logger::Logger,
-};
+use super::alloc::{BackendBox, allocate, deallocate};
 
 pub(crate) struct Inner<A, L>
 where
