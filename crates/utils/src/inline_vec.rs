@@ -20,6 +20,22 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     }
 
     #[inline]
+    pub fn from_array<const SIZE: usize>(value: [T; SIZE]) -> Self {
+        let mut array = [const { MaybeUninit::uninit() }; CAPACITY];
+
+        for (index, element) in value.into_iter().enumerate() {
+            let dest = unsafe { array.get_unchecked_mut(index) };
+
+            *dest = MaybeUninit::new(element);
+        }
+
+        Self {
+            array,
+            length: SIZE,
+        }
+    }
+
+    #[inline]
     pub fn push(&mut self, value: T) -> Result<(), crate::BufferOverflowError> {
         if self.length == CAPACITY {
             drop(value);
