@@ -18,21 +18,6 @@ use crate::Backend;
 /// # Returns
 ///
 /// A `NonNull<V>` pointing to the stored value.
-///
-/// # Examples
-///
-/// ```no_run
-/// use std::alloc::Global;
-/// use core::ptr::NonNull;
-///
-/// // Allocate an integer with the global allocator, read it, then deallocate.
-/// let allocator = Global;
-/// let ptr: NonNull<u32> = unsafe { allocate(&allocator, 42u32) };
-/// assert_eq!(unsafe { ptr.as_ref() }, &42u32);
-/// unsafe {
-///     allocator.deallocate(ptr.cast(), std::alloc::Layout::new::<u32>());
-/// }
-/// ```
 #[inline(always)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where

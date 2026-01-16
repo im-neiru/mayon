@@ -52,18 +52,6 @@ where
     /// # Returns
     ///
     /// `Ok(Self)` if backend creation succeeds, `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` otherwise.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// let instance = Instance::new::<'static, VulkanBackend>(
-    ///     VulkanBackendParams::default()
-    ///         .with_application_name(c"Mayon")
-    ///         .with_engine_name(c"Mayon Engine")
-    ///         .with_application_version((1, 0)),
-    ///     DefaultLogger
-    /// ).unwrap();
-    /// ```
     #[inline]
     pub fn new<'s, B>(
         params: B::Params,

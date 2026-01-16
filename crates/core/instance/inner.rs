@@ -39,13 +39,6 @@ where
     /// # Errors
     ///
     /// Returns a `CreateBackendError` if backend creation fails.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// // `A` implements `Allocator`, `L` implements `Logger`, and `B` implements `Backend + CreateBackend<'_, A, L>`.
-    /// let arc = ArcInner::new::<B>(allocator, logger, params)?;
-    /// ```
     pub(super) fn new<'s, B>(
         allocator: A,
         logger: L,
