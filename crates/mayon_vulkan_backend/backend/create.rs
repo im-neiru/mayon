@@ -1,11 +1,11 @@
-use core::{alloc::Allocator, ffi::CStr, mem::MaybeUninit, ptr::NonNull};
+use core::{ffi::CStr, mem::MaybeUninit, ptr::NonNull};
 
-use utils::{BufferOverflowError, InlineVec};
-
+use allocator::Allocator;
 use mayon_core::{
     BaseError, CreateBackend, CreateBackendError, TargetPlatform, UnsupportedPlatformError, info,
     logger::{Logger, Target as LogTarget},
 };
+use utils::{BufferOverflowError, InlineVec};
 
 use crate::{
     Error, VulkanBackend,

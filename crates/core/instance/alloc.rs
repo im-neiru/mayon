@@ -46,7 +46,7 @@ where
 {
     let layout = Layout::new::<V>();
 
-    unsafe { allocator.deallocate(ptr.cast(), layout) }
+    unsafe { allocator.deallocate(ptr.cast()) }
 }
 
 pub struct BackendBox {
@@ -79,7 +79,7 @@ impl BackendBox {
         A: Allocator,
     {
         unsafe {
-            allocator.deallocate(self.ptr.cast(), self.layout);
+            allocator.deallocate(self.ptr.cast());
         }
     }
 }

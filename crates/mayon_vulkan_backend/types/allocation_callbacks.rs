@@ -1,10 +1,6 @@
-use core::{
-    alloc::{Allocator, Layout},
-    ffi::c_void,
-    marker::PhantomData,
-    mem::transmute,
-    ptr::NonNull,
-};
+use core::{alloc::Layout, ffi::c_void, marker::PhantomData, mem::transmute, ptr::NonNull};
+
+use allocator::Allocator;
 
 use utils::AllocatorUtils;
 
@@ -54,9 +50,7 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
-        let Ok(ptr) = allocator
-            .allocate_with_stored_layout(Layout::from_size_align_unchecked(size, alignment))
-        else {
+        let Ok(ptr) = allocator.allocate(Layout::from_size_align_unchecked(size, alignment)) else {
             return None;
         };
 
@@ -73,7 +67,7 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
-        let Ok(ptr) = allocator.reallocate_with_stored_layout(
+        let Ok(ptr) = allocator.reallocate(
             transmute::<Option<NonNull<c_void>>, NonNull<u8>>(original),
             Layout::from_size_align_unchecked(size, alignment),
         ) else {
@@ -103,7 +97,7 @@ where
     unsafe extern "system" fn handle_free(allocator: NonNull<A>, memory: NonNull<c_void>) {
         let allocator = allocator.as_ref();
 
-        allocator.deallocate_with_stored_layout(memory.cast());
+        allocator.deallocate(memory.cast());
     }
 }
 
