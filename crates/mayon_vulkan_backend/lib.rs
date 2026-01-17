@@ -1,5 +1,3 @@
-#![feature(once_cell_try)]
-
 mod backend;
 mod errors;
 mod fn_table;
