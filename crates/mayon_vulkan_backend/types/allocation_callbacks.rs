@@ -2,8 +2,6 @@ use core::{alloc::Layout, ffi::c_void, marker::PhantomData, mem::transmute, ptr:
 
 use allocator::Allocator;
 
-use utils::AllocatorUtils;
-
 #[repr(C)]
 pub(crate) struct AllocationCallbacks<'a, A> {
     pub allocator: NonNull<A>,

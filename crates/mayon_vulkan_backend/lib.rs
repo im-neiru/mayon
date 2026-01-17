@@ -1,4 +1,3 @@
-#![feature(allocator_api)]
 #![feature(once_cell_try)]
 
 mod backend;

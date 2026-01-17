@@ -1,5 +1,3 @@
-#![feature(allocator_api)]
-
 mod allocator;
 mod conversions;
 mod errors;
