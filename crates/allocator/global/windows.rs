@@ -102,3 +102,78 @@ unsafe impl crate::Allocator for super::System {
         unsafe { rellocate(ptr, new_layout, 0) }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Allocator;
+    use core::alloc::Layout;
+
+    #[test]
+    fn test_basic_allocation() {
+        unsafe {
+            let system = crate::System;
+            let layout = Layout::from_size_align(64, 8).unwrap();
+
+            let res = system.allocate(layout).expect("Allocation failed");
+
+            let ptr: NonNull<u8> = NonNull::new(res.as_ptr() as *mut u8).unwrap();
+
+            ptr.as_ptr().write_volatile(42);
+            assert_eq!(ptr.as_ptr().read_volatile(), 42);
+
+            system.deallocate(ptr, layout);
+        }
+    }
+
+    #[test]
+    fn test_allocate_zeroed() {
+        unsafe {
+            let system = crate::System;
+            let size = 1024;
+            let layout = Layout::from_size_align(size, 8).unwrap();
+
+            let res = system
+                .allocate_zeroed(layout)
+                .expect("Zeroed allocation failed");
+            let ptr = res.as_ptr() as *mut u8;
+
+            for i in 0..size {
+                assert_eq!(*ptr.add(i), 0, "Memory at offset {} was not zeroed", i);
+            }
+
+            system.deallocate(NonNull::new(ptr).unwrap(), layout);
+        }
+    }
+
+    #[test]
+    fn test_grow_and_shrink() {
+        unsafe {
+            let system = crate::System;
+            let old_layout = Layout::from_size_align(32, 8).unwrap();
+            let new_layout = Layout::from_size_align(128, 8).unwrap();
+
+            let res = system.allocate(old_layout).expect("Initial alloc failed");
+            let ptr = NonNull::new(res.as_ptr() as *mut u8).unwrap();
+
+            ptr.as_ptr().write_bytes(0xAA, 32);
+
+            let res_grown = system
+                .grow(ptr, old_layout, new_layout)
+                .expect("Grow failed");
+            let ptr_grown = NonNull::new(res_grown.as_ptr() as *mut u8).unwrap();
+
+            assert_eq!(*ptr_grown.as_ptr(), 0xAA);
+
+            let smaller_layout = Layout::from_size_align(16, 8).unwrap();
+            let res_shrunk = system
+                .shrink(ptr_grown, new_layout, smaller_layout)
+                .expect("Shrink failed");
+            let ptr_shrunk = NonNull::new(res_shrunk.as_ptr() as *mut u8).unwrap();
+
+            assert_eq!(*ptr_shrunk.as_ptr(), 0xAA);
+
+            system.deallocate(ptr_shrunk, smaller_layout);
+        }
+    }
+}
