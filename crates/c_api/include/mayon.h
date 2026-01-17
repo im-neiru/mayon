@@ -30,6 +30,10 @@ enum MynFallibleResult
    */
   MAYON_RESULT_BACKEND_LOAD_ERROR = 40961,
   /**
+   * @brief Unsupported target windowing platform
+   */
+  MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 40962,
+  /**
    * @brief Vulkan could not be loaded or initialized.
    */
   MAYON_RESULT_VULKAN_LOAD_ERROR = 45057,

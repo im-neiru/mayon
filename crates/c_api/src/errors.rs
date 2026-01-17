@@ -5,6 +5,11 @@ use core::{
 
 use std::ptr::null;
 
+use mayon::{
+    BackendCreateKind, BaseError, CreateBackendError,
+    backends::vulkan::ErrorKind as VulkanErrorKind,
+};
+
 use crate::fallible_result::MynFallibleResult;
 
 thread_local! {
@@ -16,6 +21,7 @@ pub(crate) enum Error {
     NullArg {
         name: &'static CStr,
     },
+    UnsupportedTargetPlatform,
     FailedBackendLoad {
         name: &'static CStr,
     },
@@ -32,6 +38,15 @@ pub(crate) fn set_ok() -> MynFallibleResult {
     MynFallibleResult::MAYON_RESULT_OK
 }
 
+/// Records that a null pointer was passed for a named argument in the current thread's error state.
+///
+/// # Parameters
+///
+/// - `name`: The C string identifying which argument was null (must be a static `CStr`).
+///
+/// # Returns
+///
+/// `MynFallibleResult::MAYON_RESULT_NULL_ARG`.
 #[inline]
 pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
     LAST_ERROR.set(Some(Error::NullArg { name }));
@@ -39,18 +54,33 @@ pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
     MynFallibleResult::MAYON_RESULT_NULL_ARG
 }
 
+/// Map a Vulkan backend creation error into the thread-local error state and return the corresponding MynFallibleResult.
+///
+/// Sets LAST_ERROR to a variant describing the provided `error` and returns the matching `MynFallibleResult` code:
+/// - Records `UnsupportedTargetPlatform` and returns `MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR`.
+/// - Records `FailedBackendLoad { name: "Vulkan" }` and returns `MAYON_RESULT_BACKEND_LOAD_ERROR`.
+/// - Records `VulkanFunction { function_name, return_code }` and returns `MAYON_RESULT_VULKAN_LOAD_ERROR`.
+///
+/// # Returns
+///
+/// The `MynFallibleResult` value that corresponds to the recorded error.
 #[inline]
-pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> MynFallibleResult {
+pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> MynFallibleResult {
     match error.kind() {
-        mayon::backends::vulkan::ErrorKind::VulkanLoad => {
+        BackendCreateKind::UnsupportedTargetPlatform => {
+            LAST_ERROR.set(Some(Error::UnsupportedTargetPlatform));
+
+            MynFallibleResult::MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR
+        }
+        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanLoad) => {
             LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
 
             MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
         }
-        mayon::backends::vulkan::ErrorKind::VulkanFunctionError {
+        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanFunctionError {
             function_name,
             code,
-        } => {
+        }) => {
             LAST_ERROR.set(Some(Error::VulkanFunction {
                 function_name,
                 return_code: code as i32,
@@ -61,6 +91,16 @@ pub(crate) fn set_vulkan_error(error: mayon::backends::vulkan::Error) -> MynFall
     }
 }
 
+/// Fetches the last thread-local error message and returns it as a C string pointer.
+///
+/// If an error has been recorded for the current thread, the function stores a C-compatible
+/// NUL-terminated representation of the message in an internal thread-local buffer and
+/// returns a pointer to that buffer. If no error is recorded, the function returns null.
+///
+/// # Returns
+///
+/// `*const c_char` pointer to a NUL-terminated C string with the last error message, or `null`
+/// if no error is set.
 #[inline(always)]
 pub(crate) fn get_message() -> *const c_char {
     LAST_ERROR.with_borrow(|err| {
@@ -70,6 +110,9 @@ pub(crate) fn get_message() -> *const c_char {
 
         match err {
             Error::NullArg { name } => store_message(format!("Null pointer argument: {:?}", name)),
+            Error::UnsupportedTargetPlatform => {
+                store_message("UnsupportedPlatformError".to_string())
+            }
             Error::FailedBackendLoad { name } => {
                 store_message(format!("Failed to load {:?} backend", name))
             }

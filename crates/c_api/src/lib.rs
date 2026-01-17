@@ -92,6 +92,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         application_version: params.application_version.into(),
         engine_name: conversions::ptr_to_op_cstr(params.engine_name),
         engine_version: params.engine_version.into(),
+        target_platform: None, // TODO: add c-api for target platforms
     };
 
     match Instance::new_in::<'static, VulkanBackend<'_, allocator::MynCustomAllocator>>(

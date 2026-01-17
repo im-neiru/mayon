@@ -3,17 +3,14 @@ name = "mayon"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+path = "lib.rs"
+
 [features]
 default = ["error_location"]
 error_location = []
 
 [dependencies]
-libloading = "0.9.0"
-log = "0.4.29"
-
-# workspace crates
-strum.workspace = true
-thiserror.workspace = true
-
 # internal crates
-utils = { path = "../utils" }
+mayon_core.path = "../core"
+mayon_vulkan_backend.path = "../mayon_vulkan_backend"

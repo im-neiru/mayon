@@ -1,0 +1,22 @@
+[package]
+name = "mayon_vulkan_backend"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[features]
+default = ["error_location"]
+error_location = []
+
+[dependencies]
+libloading = "0.9.0"
+
+# workspace dependencies
+raw-window-handle.workspace = true
+thiserror.workspace = true
+
+# internal dependencies
+utils.path = "../utils"
+mayon_core.path = "../core"
