@@ -65,7 +65,7 @@ pub mod c_api {
     const HEAP_ZERO_MEMORY: u32 = 0x00000008;
 
     #[inline]
-    pub unsafe fn inner_allocate(layout: Layout, flags: u32) -> AllocResult {
+    unsafe fn inner_allocate(layout: Layout, flags: u32) -> AllocResult {
         let ptr = unsafe { heap_alloc(get_process_heap(), flags, layout.size()) as *mut u8 };
 
         let Some(ptr) = NonNull::new(ptr) else {
@@ -76,11 +76,7 @@ pub mod c_api {
     }
 
     #[inline]
-    pub unsafe fn inner_reallocate(
-        ptr: NonNull<u8>,
-        new_layout: Layout,
-        flags: u32,
-    ) -> AllocResult {
+    unsafe fn inner_reallocate(ptr: NonNull<u8>, new_layout: Layout, flags: u32) -> AllocResult {
         let ptr = unsafe {
             heap_realloc(
                 get_process_heap(),
@@ -97,26 +93,67 @@ pub mod c_api {
         Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
     }
 
+    /// Allocates uninitialized memory from the process heap.
+    ///
+    /// # Safety
+    ///
+    /// - The returned memory is **uninitialized** and must be fully initialized
+    ///   before being read.
+    /// - The allocation must eventually be freed using [`deallocate`].
+    /// - Alignment requirements are not guaranteed by the Windows heap.
     #[inline]
     pub unsafe fn allocate(layout: Layout) -> AllocResult {
         unsafe { inner_allocate(layout, 0) }
     }
 
+    /// Allocates zero-initialized memory from the process heap.
+    ///
+    /// # Safety
+    ///
+    /// - The allocation must eventually be freed using [`deallocate`].
+    /// - Alignment requirements are not guaranteed by the Windows heap.
     #[inline]
     pub unsafe fn allocate_zeroed(layout: Layout) -> AllocResult {
         unsafe { inner_allocate(layout, HEAP_ZERO_MEMORY) }
     }
 
+    /// Frees a memory block previously allocated from the process heap.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must have been returned by [`allocate`], [`allocate_zeroed`],
+    ///   or a successful reallocation.
+    /// - `ptr` must not be freed more than once.
+    /// - No references to the allocation may be used after this call.
     #[inline]
     pub unsafe fn deallocate(ptr: NonNull<u8>) {
-        unsafe { heap_free(get_process_heap(), 0, ptr.as_ptr() as *mut _) };
+        unsafe {
+            heap_free(get_process_heap(), 0, ptr.as_ptr() as *mut _);
+        }
     }
 
+    /// Reallocates an existing allocation to a new layout.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must be a valid allocation from this module.
+    /// - Any existing references to the allocation must not be used after
+    ///   this call.
+    /// - The returned memory must eventually be freed using [`deallocate`].
     #[inline]
     pub unsafe fn reallocate(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { inner_reallocate(ptr, new_layout, 0) }
     }
 
+    /// Reallocates an existing allocation and zero-initializes any newly
+    /// allocated memory.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must be a valid allocation from this module.
+    /// - Any existing references to the allocation must not be used after
+    ///   this call.
+    /// - The returned memory must eventually be freed using [`deallocate`].
     #[inline]
     pub unsafe fn reallocate_zeroed(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { inner_reallocate(ptr, new_layout, HEAP_ZERO_MEMORY) }
