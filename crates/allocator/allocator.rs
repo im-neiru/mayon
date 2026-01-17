@@ -10,22 +10,13 @@ pub(crate) type AllocResult = Result<NonNull<[u8]>, AllocError>;
 pub unsafe trait Allocator {
     unsafe fn allocate(&self, layout: Layout) -> AllocResult;
 
-    unsafe fn allocate_zeroed(&self, layout: Layout) -> AllocResult;
-
     unsafe fn deallocate(&self, ptr: NonNull<u8>);
 
     unsafe fn reallocate(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
 
-    unsafe fn reallocate_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
-
     #[inline]
     unsafe fn grow(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { self.reallocate(ptr, new_layout) }
-    }
-
-    #[inline]
-    unsafe fn grow_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { self.reallocate_zeroed(ptr, new_layout) }
     }
 
     #[inline]
