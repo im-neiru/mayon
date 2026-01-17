@@ -4,7 +4,8 @@ pub struct AllocError;
 
 pub(crate) type AllocResult = Result<NonNull<[u8]>, AllocError>;
 
-pub trait Allocator {
+#[allow(clippy::missing_safety_doc)]
+pub unsafe trait Allocator {
     unsafe fn allocate(&self, layout: Layout) -> AllocResult;
 
     unsafe fn allocate_zeroed(&self, layout: Layout) -> AllocResult;
