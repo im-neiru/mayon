@@ -1,7 +1,7 @@
 #![no_std]
 
 mod allocator;
-mod global;
+mod system;
 
 pub use allocator::{AllocError, Allocator};
-pub use global::System;
+pub use system::System;
