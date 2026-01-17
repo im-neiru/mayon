@@ -2,7 +2,7 @@ use core::{alloc::Layout, ptr::NonNull};
 
 pub struct AllocError;
 
-type AllocResult = Result<NonNull<[u8]>, AllocError>;
+pub(crate) type AllocResult = Result<NonNull<[u8]>, AllocError>;
 
 pub trait Allocator {
     unsafe fn allocate(&self, layout: Layout) -> AllocResult;
