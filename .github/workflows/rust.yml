@@ -40,10 +40,10 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Run Clippy (stable)
-        run: cargo clippy -- -A unused
+        run: cargo +stable clippy -- -A unused
 
       - name: Run tests (stable)
-        run: cargo test --lib
+        run: cargo +stable test --lib
 
       - name: Run Miri (nightly)
         run: |
