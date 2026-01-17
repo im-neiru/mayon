@@ -20,28 +20,6 @@ pub mod c_api {
         unsafe fn free(ptr: *mut c_void);
     }
 
-    #[inline]
-    unsafe fn inner_allocate(layout: Layout) -> AllocResult {
-        let ptr = unsafe { malloc(layout.size()) as *mut u8 };
-
-        let Some(ptr) = NonNull::new(ptr) else {
-            return Err(AllocError);
-        };
-
-        Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
-    }
-
-    #[inline]
-    unsafe fn inner_reallocate(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        let ptr = unsafe { realloc(ptr.as_ptr().cast(), new_layout.size()) as *mut u8 };
-
-        let Some(ptr) = NonNull::new(ptr) else {
-            return Err(AllocError);
-        };
-
-        Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
-    }
-
     /// Allocates uninitialized memory.
     ///
     /// # Safety
@@ -51,7 +29,13 @@ pub mod c_api {
     /// - Alignment guarantees are platform-dependent.
     #[inline]
     pub unsafe fn allocate(layout: Layout) -> AllocResult {
-        unsafe { inner_allocate(layout) }
+        let ptr = unsafe { malloc(layout.size()) as *mut u8 };
+
+        let Some(ptr) = NonNull::new(ptr) else {
+            return Err(AllocError);
+        };
+
+        Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
     }
 
     /// Frees a memory block previously allocated by this module.
@@ -79,6 +63,12 @@ pub mod c_api {
     /// - The returned allocation must eventually be freed using [`deallocate`].
     #[inline]
     pub unsafe fn reallocate(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { inner_reallocate(ptr, new_layout) }
+        let ptr = unsafe { realloc(ptr.as_ptr().cast(), new_layout.size()) as *mut u8 };
+
+        let Some(ptr) = NonNull::new(ptr) else {
+            return Err(AllocError);
+        };
+
+        Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
     }
 }
