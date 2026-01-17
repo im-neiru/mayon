@@ -1,10 +1,11 @@
 use core::{
-    alloc::Allocator,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
     ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
+
+use allocator::Allocator;
 
 use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logger};
 

@@ -1,4 +1,4 @@
-use core::alloc::Allocator;
+use allocator::Allocator;
 
 use crate::{BaseError, CreateBackendError, logger::Logger};
 

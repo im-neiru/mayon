@@ -1,8 +1,7 @@
 mod alloc;
 mod inner;
 
-use core::alloc::Allocator;
-use std::alloc::Global;
+use allocator::{Allocator, System};
 
 use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logger};
 
@@ -43,7 +42,7 @@ where
     }
 }
 
-impl<L> Instance<Global, L>
+impl<L> Instance<System, L>
 where
     L: Logger + 'static,
 {
@@ -58,8 +57,8 @@ where
         logger: L,
     ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
     where
-        B: Backend + CreateBackend<'s, Global, L> + 'static,
+        B: Backend + CreateBackend<'s, System, L> + 'static,
     {
-        Self::new_in::<B>(params, Global, logger)
+        Self::new_in::<B>(params, System, logger)
     }
 }

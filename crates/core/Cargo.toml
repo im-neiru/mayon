@@ -20,4 +20,5 @@ strum.workspace = true
 thiserror.workspace = true
 
 # internal crates
+allocator = { path = "../allocator" }
 utils = { path = "../utils" }

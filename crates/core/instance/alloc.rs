@@ -1,9 +1,11 @@
 use core::{
-    alloc::{Allocator, Layout},
+    alloc::Layout,
     ops::{Deref, DerefMut},
     ptr::NonNull,
 };
 use std::alloc::handle_alloc_error;
+
+use allocator::Allocator;
 
 use crate::Backend;
 
@@ -19,6 +21,7 @@ use crate::Backend;
 ///
 /// A `NonNull<V>` pointing to the stored value.
 #[inline(always)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where
     A: Allocator,
@@ -53,6 +56,7 @@ pub struct BackendBox {
 
 impl BackendBox {
     #[inline]
+    #[allow(unsafe_op_in_unsafe_fn)]
     pub unsafe fn new_in<A, B>(allocator: &A, value: B) -> Self
     where
         A: Allocator,
@@ -70,7 +74,7 @@ impl BackendBox {
     }
 
     #[inline]
-    pub fn drop<A>(&self, allocator: A)
+    pub fn drop<A>(&self, allocator: &A)
     where
         A: Allocator,
     {
