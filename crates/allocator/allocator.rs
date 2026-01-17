@@ -14,9 +14,22 @@ pub unsafe trait Allocator {
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>);
 
-    unsafe fn grow(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
+    unsafe fn reallocate(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
 
-    unsafe fn grow_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
+    unsafe fn reallocate_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
 
-    unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult;
+    #[inline]
+    unsafe fn grow(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
+        unsafe { self.reallocate(ptr, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn grow_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
+        unsafe { self.reallocate_zeroed(ptr, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
+        unsafe { self.reallocate(ptr, new_layout) }
+    }
 }

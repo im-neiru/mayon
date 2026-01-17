@@ -78,18 +78,13 @@ unsafe impl crate::Allocator for super::System {
     }
 
     #[inline]
-    unsafe fn grow(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
+    unsafe fn reallocate(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { rellocate(ptr, new_layout, 0) }
     }
 
     #[inline]
-    unsafe fn grow_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
+    unsafe fn reallocate_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { rellocate(ptr, new_layout, HEAP_ZERO_MEMORY) }
-    }
-
-    #[inline]
-    unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { rellocate(ptr, new_layout, 0) }
     }
 }
 #[cfg(test)]
