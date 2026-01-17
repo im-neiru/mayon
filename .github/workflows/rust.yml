@@ -1,4 +1,4 @@
-name: Rust Nightly
+name: Rust CI
 
 on:
   push:
@@ -11,17 +11,22 @@ env:
 
 jobs:
   test:
-    name: Rust Nightly Linux
+    name: Rust Linux
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Rust nightly
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Install Rust nightly (Miri)
         uses: dtolnay/rust-toolchain@nightly
         with:
-          components: miri, clippy
+          components: miri
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -30,17 +35,17 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-nightly-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-nightly-
+            ${{ runner.os }}-cargo-
 
-      - name: Run Clippy
+      - name: Run Clippy (stable)
         run: cargo clippy -- -A unused
 
-      - name: Run tests
+      - name: Run tests (stable)
         run: cargo test --lib
 
-      - name: Run Miri
+      - name: Run Miri (nightly)
         run: |
-          cargo miri setup
-          cargo miri test --lib
+          cargo +nightly miri setup
+          cargo +nightly miri test --lib
