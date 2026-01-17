@@ -1,5 +1,3 @@
-#![no_std]
-
 mod allocator;
 mod system;
 

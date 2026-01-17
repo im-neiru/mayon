@@ -1,5 +1,11 @@
+#[cfg(miri)]
+mod miri;
+
+#[cfg(not(miri))]
 #[cfg(target_family = "unix")]
 mod unix;
+
+#[cfg(not(miri))]
 #[cfg(target_family = "windows")]
 mod windows;
 
@@ -9,13 +15,18 @@ use crate::allocator::AllocResult;
 
 pub struct System;
 
+#[cfg(not(miri))]
 #[cfg(feature = "for_c_api")]
 #[cfg(target_family = "windows")]
 pub use windows::c_api;
 
+#[cfg(not(miri))]
 #[cfg(feature = "for_c_api")]
 #[cfg(target_family = "unix")]
 pub use unix::c_api;
+
+#[cfg(miri)]
+pub use miri::c_api;
 
 unsafe impl crate::Allocator for super::System {
     #[inline]
