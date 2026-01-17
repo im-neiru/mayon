@@ -4,4 +4,4 @@ mod allocator;
 mod global;
 
 pub use allocator::{AllocError, Allocator};
-pub use global::Global;
+pub use global::System;

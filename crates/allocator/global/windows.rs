@@ -61,7 +61,7 @@ unsafe fn rellocate(ptr: NonNull<u8>, new_layout: Layout, flags: u32) -> AllocRe
     Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
 }
 
-unsafe impl crate::Allocator for super::Global {
+unsafe impl crate::Allocator for super::System {
     #[inline]
     unsafe fn allocate(&self, layout: Layout) -> AllocResult {
         unsafe { allocate(layout, 0) }

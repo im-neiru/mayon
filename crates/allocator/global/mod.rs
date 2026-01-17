@@ -1,4 +1,4 @@
 #[cfg(target_os = "windows")]
 mod windows;
 
-pub struct Global;
+pub struct System;
