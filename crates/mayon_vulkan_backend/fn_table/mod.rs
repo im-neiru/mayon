@@ -1,13 +1,13 @@
 use core::mem::MaybeUninit;
 
-use std::sync::OnceLock;
+use once_cell::sync::OnceCell;
 
 mod loader;
 
 use libloading::Library;
 
 use crate::{
-    ErrorKind,
+    ErrorKind, errors,
     types::{AllocationCallbacksRef, Instance, InstanceCreateInfo, VkResult},
 };
 
@@ -24,7 +24,7 @@ pub struct FnTable {
         unsafe extern "system" fn(instance: Instance, allocator: AllocationCallbacksRef),
 }
 
-static FN_TABLE: OnceLock<FnTable> = OnceLock::new();
+static FN_TABLE: OnceCell<FnTable> = OnceCell::new();
 
 impl FnTable {
     /// Returns the cached global function table, initializing and caching it on first use.
