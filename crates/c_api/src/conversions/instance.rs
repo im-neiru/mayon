@@ -1,5 +1,6 @@
-use core::{alloc::Allocator, mem::transmute};
+use core::mem::transmute;
 
+use allocator::Allocator;
 use mayon::{Instance, logger::Logger};
 
 impl<A, L> From<Instance<A, L>> for crate::MynInstance

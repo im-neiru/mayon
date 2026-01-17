@@ -96,14 +96,9 @@ typedef struct MynMemLayout {
 typedef struct MynCustomAllocator {
   uint8_t *(*pfn_allocate)(struct MynMemLayout layout);
   uint8_t *(*pfn_allocate_zeroed)(struct MynMemLayout layout);
-  void (*pfn_deallocate)(const uint8_t *ptr, struct MynMemLayout layout);
-  uint8_t *(*pfn_grow)(uint8_t *ptr, struct MynMemLayout old_layout, struct MynMemLayout new_layout);
-  uint8_t *(*pfn_grow_zeroed)(uint8_t *ptr,
-                              struct MynMemLayout old_layout,
-                              struct MynMemLayout new_layout);
-  uint8_t *(*pfn_shrink)(uint8_t *ptr,
-                         struct MynMemLayout old_layout,
-                         struct MynMemLayout new_layout);
+  void (*pfn_deallocate)(const uint8_t *ptr);
+  uint8_t *(*pfn_reallocate)(uint8_t *ptr, struct MynMemLayout new_layout);
+  uint8_t *(*pfn_reallocate_zeroed)(uint8_t *ptr, struct MynMemLayout new_layout);
 } MynCustomAllocator;
 
 /**
