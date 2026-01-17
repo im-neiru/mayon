@@ -1,5 +1,7 @@
 use core::{alloc::Layout, ptr::NonNull};
 
+#[derive(Clone, Copy, Debug, thiserror::Error)]
+#[error("Allocation Error")]
 pub struct AllocError;
 
 pub(crate) type AllocResult = Result<NonNull<[u8]>, AllocError>;
