@@ -1,34 +1,3 @@
-use core::{alloc::Layout, ptr::NonNull};
-
-use crate::allocator::AllocResult;
-
-unsafe impl crate::Allocator for super::System {
-    #[inline]
-    unsafe fn allocate(&self, layout: Layout) -> AllocResult {
-        unsafe { c_api::allocate(layout) }
-    }
-
-    #[inline]
-    unsafe fn allocate_zeroed(&self, layout: Layout) -> AllocResult {
-        unsafe { c_api::allocate_zeroed(layout) }
-    }
-
-    #[inline]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>) {
-        unsafe { c_api::deallocate(ptr) };
-    }
-
-    #[inline]
-    unsafe fn reallocate(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { c_api::reallocate(ptr, new_layout) }
-    }
-
-    #[inline]
-    unsafe fn reallocate_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { c_api::reallocate_zeroed(ptr, new_layout) }
-    }
-}
-
 pub mod c_api {
     use core::{alloc::Layout, ffi::c_void, ptr::NonNull};
 
@@ -62,37 +31,6 @@ pub mod c_api {
         ) -> *mut c_void;
     }
 
-    const HEAP_ZERO_MEMORY: u32 = 0x00000008;
-
-    #[inline]
-    unsafe fn inner_allocate(layout: Layout, flags: u32) -> AllocResult {
-        let ptr = unsafe { heap_alloc(get_process_heap(), flags, layout.size()) as *mut u8 };
-
-        let Some(ptr) = NonNull::new(ptr) else {
-            return Err(AllocError);
-        };
-
-        Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
-    }
-
-    #[inline]
-    unsafe fn inner_reallocate(ptr: NonNull<u8>, new_layout: Layout, flags: u32) -> AllocResult {
-        let ptr = unsafe {
-            heap_realloc(
-                get_process_heap(),
-                flags,
-                ptr.as_ptr().cast(),
-                new_layout.size(),
-            ) as *mut u8
-        };
-
-        let Some(ptr) = NonNull::new(ptr) else {
-            return Err(AllocError);
-        };
-
-        Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
-    }
-
     /// Allocates uninitialized memory from the process heap.
     ///
     /// # Safety
@@ -103,25 +41,20 @@ pub mod c_api {
     /// - Alignment requirements are not guaranteed by the Windows heap.
     #[inline]
     pub unsafe fn allocate(layout: Layout) -> AllocResult {
-        unsafe { inner_allocate(layout, 0) }
-    }
+        let ptr = unsafe { heap_alloc(get_process_heap(), 0, layout.size()) as *mut u8 };
 
-    /// Allocates zero-initialized memory from the process heap.
-    ///
-    /// # Safety
-    ///
-    /// - The allocation must eventually be freed using [`deallocate`].
-    /// - Alignment requirements are not guaranteed by the Windows heap.
-    #[inline]
-    pub unsafe fn allocate_zeroed(layout: Layout) -> AllocResult {
-        unsafe { inner_allocate(layout, HEAP_ZERO_MEMORY) }
+        let Some(ptr) = NonNull::new(ptr) else {
+            return Err(AllocError);
+        };
+
+        Ok(NonNull::slice_from_raw_parts(ptr, layout.size()))
     }
 
     /// Frees a memory block previously allocated from the process heap.
     ///
     /// # Safety
     ///
-    /// - `ptr` must have been returned by [`allocate`], [`allocate_zeroed`],
+    /// - `ptr` must have been returned by [`allocate`],
     ///   or a successful reallocation.
     /// - `ptr` must not be freed more than once.
     /// - No references to the allocation may be used after this call.
@@ -142,21 +75,20 @@ pub mod c_api {
     /// - The returned memory must eventually be freed using [`deallocate`].
     #[inline]
     pub unsafe fn reallocate(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { inner_reallocate(ptr, new_layout, 0) }
-    }
+        let ptr = unsafe {
+            heap_realloc(
+                get_process_heap(),
+                0,
+                ptr.as_ptr().cast(),
+                new_layout.size(),
+            ) as *mut u8
+        };
 
-    /// Reallocates an existing allocation and zero-initializes any newly
-    /// allocated memory.
-    ///
-    /// # Safety
-    ///
-    /// - `ptr` must be a valid allocation from this module.
-    /// - Any existing references to the allocation must not be used after
-    ///   this call.
-    /// - The returned memory must eventually be freed using [`deallocate`].
-    #[inline]
-    pub unsafe fn reallocate_zeroed(ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
-        unsafe { inner_reallocate(ptr, new_layout, HEAP_ZERO_MEMORY) }
+        let Some(ptr) = NonNull::new(ptr) else {
+            return Err(AllocError);
+        };
+
+        Ok(NonNull::slice_from_raw_parts(ptr, new_layout.size()))
     }
 }
 
@@ -180,27 +112,6 @@ mod tests {
             assert_eq!(ptr.as_ptr().read_volatile(), 42);
 
             system.deallocate(ptr);
-        }
-    }
-
-    #[test]
-    fn test_allocate_zeroed() {
-        unsafe {
-            let system = crate::System;
-            let size = 1024;
-            let layout = Layout::from_size_align(size, 8).unwrap();
-
-            let res = system
-                .allocate_zeroed(layout)
-                .expect("Zeroed allocation failed");
-
-            let ptr = res.as_ptr() as *mut u8;
-
-            for i in 0..size {
-                assert_eq!(*ptr.add(i), 0, "Memory at offset {} was not zeroed", i);
-            }
-
-            system.deallocate(NonNull::new(ptr).unwrap());
         }
     }
 
