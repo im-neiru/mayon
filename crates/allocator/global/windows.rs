@@ -73,56 +73,45 @@ unsafe impl crate::Allocator for super::System {
     }
 
     #[inline]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
+    unsafe fn deallocate(&self, ptr: NonNull<u8>) {
         unsafe { heap_free(get_process_heap(), 0, ptr.as_ptr() as *mut _) };
     }
 
     #[inline]
-    unsafe fn grow(&self, ptr: NonNull<u8>, _: Layout, new_layout: Layout) -> AllocResult {
+    unsafe fn grow(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { rellocate(ptr, new_layout, 0) }
     }
 
     #[inline]
-    unsafe fn grow_zeroed(
-        &self,
-        ptr: NonNull<u8>,
-        _old_layout: Layout,
-        new_layout: Layout,
-    ) -> AllocResult {
+    unsafe fn grow_zeroed(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { rellocate(ptr, new_layout, HEAP_ZERO_MEMORY) }
     }
 
     #[inline]
-    unsafe fn shrink(
-        &self,
-        ptr: NonNull<u8>,
-        _old_layout: Layout,
-        new_layout: Layout,
-    ) -> AllocResult {
+    unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { rellocate(ptr, new_layout, 0) }
     }
 }
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::Allocator;
-    use core::alloc::Layout;
+    use core::{alloc::Layout, ptr::NonNull};
 
     #[test]
     fn test_basic_allocation() {
         unsafe {
             let system = crate::System;
+
             let layout = Layout::from_size_align(64, 8).unwrap();
 
             let res = system.allocate(layout).expect("Allocation failed");
 
-            let ptr: NonNull<u8> = NonNull::new(res.as_ptr() as *mut u8).unwrap();
+            let ptr: NonNull<u8> = NonNull::new(res.as_ptr() as *mut u8).expect("Returned null");
 
             ptr.as_ptr().write_volatile(42);
             assert_eq!(ptr.as_ptr().read_volatile(), 42);
 
-            system.deallocate(ptr, layout);
+            system.deallocate(ptr);
         }
     }
 
@@ -136,13 +125,14 @@ mod tests {
             let res = system
                 .allocate_zeroed(layout)
                 .expect("Zeroed allocation failed");
+
             let ptr = res.as_ptr() as *mut u8;
 
             for i in 0..size {
                 assert_eq!(*ptr.add(i), 0, "Memory at offset {} was not zeroed", i);
             }
 
-            system.deallocate(NonNull::new(ptr).unwrap(), layout);
+            system.deallocate(NonNull::new(ptr).unwrap());
         }
     }
 
@@ -158,22 +148,22 @@ mod tests {
 
             ptr.as_ptr().write_bytes(0xAA, 32);
 
-            let res_grown = system
-                .grow(ptr, old_layout, new_layout)
-                .expect("Grow failed");
+            let res_grown = system.grow(ptr, new_layout).expect("Grow failed");
             let ptr_grown = NonNull::new(res_grown.as_ptr() as *mut u8).unwrap();
 
             assert_eq!(*ptr_grown.as_ptr(), 0xAA);
+            assert_eq!(res_grown.len(), 128);
 
             let smaller_layout = Layout::from_size_align(16, 8).unwrap();
             let res_shrunk = system
-                .shrink(ptr_grown, new_layout, smaller_layout)
+                .shrink(ptr_grown, smaller_layout)
                 .expect("Shrink failed");
             let ptr_shrunk = NonNull::new(res_shrunk.as_ptr() as *mut u8).unwrap();
 
             assert_eq!(*ptr_shrunk.as_ptr(), 0xAA);
+            assert_eq!(res_shrunk.len(), 16);
 
-            system.deallocate(ptr_shrunk, smaller_layout);
+            system.deallocate(ptr_shrunk);
         }
     }
 }
