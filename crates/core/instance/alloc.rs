@@ -1,7 +1,7 @@
 use core::{
     alloc::Layout,
     ops::{Deref, DerefMut},
-    ptr::NonNull,
+    ptr::{NonNull, drop_in_place},
 };
 use std::alloc::handle_alloc_error;
 
@@ -79,6 +79,7 @@ impl BackendBox {
         A: Allocator,
     {
         unsafe {
+            drop_in_place(self.ptr.as_ptr());
             allocator.deallocate(self.ptr.cast());
         }
     }
