@@ -1,3 +1,7 @@
+#[cfg(target_env = "gnu")]
+#[path = "gnu.rs"]
+pub mod raw;
+
 #[cfg(miri)]
 #[path = "windows/mod.rs"]
 pub mod raw;
@@ -8,8 +12,8 @@ pub mod raw;
 pub mod raw;
 
 #[cfg(not(miri))]
-#[cfg(target_family = "windows")]
-#[path = "windows/mod.rs"]
+#[cfg(all(target_family = "windows", target_env = "msvc"))]
+#[path = "windows_msvc.rs"]
 pub mod raw;
 
 use core::{alloc::Layout, ptr::NonNull};
