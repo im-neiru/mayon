@@ -7,7 +7,7 @@ edition = "2024"
 path = "lib.rs"
 
 [features]
-for_c_api = []
+sys_raw = []
 
 [dependencies]
 thiserror.workspace = true
