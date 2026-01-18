@@ -28,7 +28,7 @@ pub use unix::c_api;
 #[cfg(miri)]
 pub use miri::c_api;
 
-unsafe impl crate::Allocator for super::System {
+unsafe impl crate::Allocator for crate::System {
     #[inline]
     unsafe fn allocate(&self, layout: Layout) -> AllocResult {
         unsafe { c_api::allocate(layout) }
