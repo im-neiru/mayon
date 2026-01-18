@@ -7,7 +7,7 @@ mod loader;
 use libloading::Library;
 
 use crate::{
-    ErrorKind, errors,
+    ErrorKind,
     types::{AllocationCallbacksRef, Instance, InstanceCreateInfo, VkResult},
 };
 

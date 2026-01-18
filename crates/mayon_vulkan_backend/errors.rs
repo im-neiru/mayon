@@ -99,7 +99,7 @@ impl ErrorKind {
     }
 }
 
-impl<'a> From<self::Error> for CreateBackendError<self::ErrorKind> {
+impl From<self::Error> for CreateBackendError<self::ErrorKind> {
     /// Converts a local `Error` into a `CreateBackendError` by wrapping the error's kind in `BackendInternal` and preserving its location.
     ///
     /// # Examples

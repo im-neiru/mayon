@@ -44,11 +44,10 @@ pub(super) unsafe fn deallocate<A, V>(allocator: &A, ptr: NonNull<V>)
 where
     A: Allocator,
 {
-    let layout = Layout::new::<V>();
-
     unsafe { allocator.deallocate(ptr.cast()) }
 }
 
+#[allow(unused)]
 pub struct BackendBox {
     ptr: NonNull<dyn Backend + 'static>,
     layout: Layout,

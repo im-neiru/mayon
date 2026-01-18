@@ -8,7 +8,7 @@ use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logge
 use inner::ArcInner;
 
 #[derive(Clone)]
-pub struct Instance<A, L>(ArcInner<A, L>)
+pub struct Instance<A, L>(#[allow(unused)] ArcInner<A, L>)
 where
     A: Allocator + 'static,
     L: Logger + 'static;
