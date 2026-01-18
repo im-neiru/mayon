@@ -16,7 +16,9 @@ unsafe extern "C" {
 
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn allocate(size: usize, alignment: usize) -> *mut u8 {
-    let layout = BlockLayout::new(size, alignment);
+    let Some(layout) = BlockLayout::new(size, alignment) else {
+        return null_mut();
+    };
 
     let start_ptr = unsafe { aligned_alloc(layout.alignment, layout.size) as *mut u8 };
 
@@ -89,17 +91,20 @@ struct BlockLayout {
 
 impl BlockLayout {
     #[inline(always)]
-    fn new(requested_size: usize, requested_alignment: usize) -> Self {
+    fn new(requested_size: usize, requested_alignment: usize) -> Option<Self> {
         let alignment = requested_alignment.max(HEADER_SIZE);
         debug_assert!(alignment.is_power_of_two());
 
         let data_offset = HEADER_SIZE.next_multiple_of(alignment);
-        let size = (data_offset + requested_size).next_multiple_of(alignment);
 
-        Self {
+        let size = data_offset
+            .checked_add(requested_size)?
+            .next_multiple_of(alignment);
+
+        Some(Self {
             data_offset,
             size,
             alignment,
-        }
+        })
     }
 }
