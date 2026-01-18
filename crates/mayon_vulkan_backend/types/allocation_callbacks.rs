@@ -1,12 +1,6 @@
-use core::{
-    alloc::{Allocator, Layout},
-    ffi::c_void,
-    marker::PhantomData,
-    mem::transmute,
-    ptr::NonNull,
-};
+use core::{alloc::Layout, ffi::c_void, marker::PhantomData, mem::transmute, ptr::NonNull};
 
-use utils::AllocatorUtils;
+use allocator::Allocator;
 
 #[repr(C)]
 pub(crate) struct AllocationCallbacks<'a, A> {
@@ -54,9 +48,7 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
-        let Ok(ptr) = allocator
-            .allocate_with_stored_layout(Layout::from_size_align_unchecked(size, alignment))
-        else {
+        let Ok(ptr) = allocator.allocate(Layout::from_size_align_unchecked(size, alignment)) else {
             return None;
         };
 
@@ -73,10 +65,13 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
-        let Ok(ptr) = allocator.reallocate_with_stored_layout(
-            transmute::<Option<NonNull<c_void>>, NonNull<u8>>(original),
-            Layout::from_size_align_unchecked(size, alignment),
-        ) else {
+        let original = original?;
+
+        let Ok(layout) = Layout::from_size_align(size, alignment) else {
+            return None;
+        };
+
+        let Ok(ptr) = allocator.reallocate(original.cast(), layout) else {
             return None;
         };
 
@@ -103,7 +98,7 @@ where
     unsafe extern "system" fn handle_free(allocator: NonNull<A>, memory: NonNull<c_void>) {
         let allocator = allocator.as_ref();
 
-        allocator.deallocate_with_stored_layout(memory.cast());
+        allocator.deallocate(memory.cast());
     }
 }
 
@@ -147,6 +142,7 @@ pub(crate) type FnInternalFreeNotification = Option<
 #[repr(transparent)]
 pub(crate) struct SystemAllocationScope(pub(crate) i32);
 
+#[allow(unused)]
 impl SystemAllocationScope {
     pub(crate) const COMMAND: Self = Self(0);
     pub(crate) const OBJECT: Self = Self(1);
@@ -160,5 +156,6 @@ impl SystemAllocationScope {
 pub(crate) struct InternalAllocationType(pub(crate) i32);
 
 impl InternalAllocationType {
+    #[allow(unused)]
     pub(crate) const EXECUTABLE: Self = Self(0);
 }

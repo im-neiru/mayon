@@ -8,9 +8,11 @@ path = "lib.rs"
 
 [features]
 default = ["error_location"]
+allocator = []
 error_location = []
 
 [dependencies]
 # internal crates
+allocator.path = "../allocator"
 mayon_core.path = "../core"
 mayon_vulkan_backend.path = "../mayon_vulkan_backend"

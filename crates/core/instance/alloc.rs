@@ -1,9 +1,11 @@
 use core::{
-    alloc::{Allocator, Layout},
+    alloc::Layout,
     ops::{Deref, DerefMut},
-    ptr::NonNull,
+    ptr::{NonNull, drop_in_place},
 };
 use std::alloc::handle_alloc_error;
+
+use allocator::Allocator;
 
 use crate::Backend;
 
@@ -19,6 +21,7 @@ use crate::Backend;
 ///
 /// A `NonNull<V>` pointing to the stored value.
 #[inline(always)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(super) unsafe fn allocate<A, V>(allocator: &A, value: V) -> NonNull<V>
 where
     A: Allocator,
@@ -41,11 +44,10 @@ pub(super) unsafe fn deallocate<A, V>(allocator: &A, ptr: NonNull<V>)
 where
     A: Allocator,
 {
-    let layout = Layout::new::<V>();
-
-    unsafe { allocator.deallocate(ptr.cast(), layout) }
+    unsafe { allocator.deallocate(ptr.cast()) }
 }
 
+#[allow(unused)]
 pub struct BackendBox {
     ptr: NonNull<dyn Backend + 'static>,
     layout: Layout,
@@ -53,6 +55,7 @@ pub struct BackendBox {
 
 impl BackendBox {
     #[inline]
+    #[allow(unsafe_op_in_unsafe_fn)]
     pub unsafe fn new_in<A, B>(allocator: &A, value: B) -> Self
     where
         A: Allocator,
@@ -70,12 +73,13 @@ impl BackendBox {
     }
 
     #[inline]
-    pub fn drop<A>(&self, allocator: A)
+    pub fn drop<A>(&self, allocator: &A)
     where
         A: Allocator,
     {
         unsafe {
-            allocator.deallocate(self.ptr.cast(), self.layout);
+            drop_in_place(self.ptr.as_ptr());
+            allocator.deallocate(self.ptr.cast());
         }
     }
 }

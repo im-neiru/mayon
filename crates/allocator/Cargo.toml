@@ -1,0 +1,13 @@
+[package]
+name = "allocator"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[features]
+sys_raw = []
+
+[dependencies]
+thiserror.workspace = true
