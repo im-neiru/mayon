@@ -88,15 +88,10 @@ typedef struct MynVkBackendParams {
   struct MynVkVersion engine_version;
 } MynVkBackendParams;
 
-typedef struct MynMemLayout {
-  uintptr_t size;
-  uintptr_t alignment;
-} MynMemLayout;
-
 typedef struct MynCustomAllocator {
-  uint8_t *(*pfn_allocate)(struct MynMemLayout layout);
-  void (*pfn_deallocate)(const uint8_t *ptr);
-  uint8_t *(*pfn_reallocate)(uint8_t *ptr, struct MynMemLayout new_layout);
+  uint8_t *(*pfn_allocate)(uintptr_t size, uintptr_t alignment);
+  void (*pfn_deallocate)(uint8_t *ptr);
+  uint8_t *(*pfn_reallocate)(uint8_t *ptr, uintptr_t new_size, uintptr_t alignment);
 } MynCustomAllocator;
 
 /**
