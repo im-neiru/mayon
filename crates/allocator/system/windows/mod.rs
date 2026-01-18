@@ -1,3 +1,6 @@
+#[cfg(target_env = "msvc")]
+mod msvcrt;
+
 pub mod c_api {
     use core::{alloc::Layout, ffi::c_void, ptr::NonNull};
 
@@ -41,6 +44,7 @@ pub mod c_api {
     /// - Alignment requirements are not guaranteed by the Windows heap.
     #[inline]
     pub unsafe fn allocate(layout: Layout) -> AllocResult {
+        layout.size();
         let ptr = unsafe { heap_alloc(get_process_heap(), 0, layout.size()) as *mut u8 };
 
         let Some(ptr) = NonNull::new(ptr) else {
