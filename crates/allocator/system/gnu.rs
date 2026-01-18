@@ -136,7 +136,7 @@ impl BlockLayout {
     fn new(requested_size: usize, requested_alignment: usize) -> Option<Self> {
         let alignment = requested_alignment.max(HEADER_SIZE);
 
-        if alignment.is_power_of_two() {
+        if !alignment.is_power_of_two() {
             return None;
         }
 
