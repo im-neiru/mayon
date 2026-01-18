@@ -8,12 +8,27 @@ unsafe extern "C" {
     /// - `size` is a multiple of `alignment`
     ///
     /// Returns null on failure.
-    pub(crate) unsafe fn aligned_alloc(alignment: usize, size: usize) -> *mut c_void;
+    unsafe fn aligned_alloc(alignment: usize, size: usize) -> *mut c_void;
 
-    /// Frees memory allocated by `aligned_alloc`, `posix_memalign`, or `malloc`.
-    pub(crate) unsafe fn free(ptr: *mut c_void);
+    /// Frees memory allocated by `aligned_alloc`, or `malloc`.
+    unsafe fn free(ptr: *mut c_void);
 }
 
+/// Allocates a block of memory with a specific size and alignment.
+///
+/// This function allocates a larger block than requested to store internal metadata
+/// immediately preceding the returned pointer.
+///
+/// # Safety
+///
+/// - `alignment` must be a power of two.
+/// - The caller is responsible for ensuring the memory is eventually deallocated
+///   using the [`deallocate`] function to avoid memory leaks.
+///
+/// # Returns
+///
+/// - On success: A pointer to the start of the requested data block, aligned to `alignment`.
+/// - On failure: A null pointer (e.g., if `alignment` is invalid or `aligned_alloc` fails).
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn allocate(size: usize, alignment: usize) -> *mut u8 {
     let Some(layout) = BlockLayout::new(size, alignment) else {
@@ -35,6 +50,16 @@ pub unsafe extern "C" fn allocate(size: usize, alignment: usize) -> *mut u8 {
     ptr
 }
 
+/// Deallocates a memory block previously allocated by [`allocate`].
+///
+/// This function retrieves the original allocation metadata from the header
+/// stored behind the pointer and frees the entire block.
+///
+/// # Safety
+///
+/// - `ptr` must have been returned by a previous call to [`allocate`] or [`reallocate`].
+/// - `ptr` must not have been previously deallocated (no double-free).
+/// - The memory must not be accessed after this call.
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn deallocate(ptr: *mut u8) {
@@ -45,6 +70,23 @@ pub unsafe extern "C" fn deallocate(ptr: *mut u8) {
     free(header.start_ptr.cast())
 }
 
+/// Changes the size of an existing memory allocation.
+///
+/// This function allocates a new block of `new_size`, copies the minimum of
+/// `old_size` and `new_size` from the old block to the new one, and then
+/// deallocates the old block.
+///
+/// # Safety
+///
+/// - `old_ptr` must be a valid pointer previously returned by [`allocate`] or [`reallocate`].
+/// - `alignment` must be a power of two.
+/// - The same safety rules as [`allocate`] and [`deallocate`] apply here regarding
+///   memory access and future cleanup.
+///
+/// # Returns
+///
+/// - On success: A pointer to the new memory block.
+/// - On failure: A null pointer. Note that if reallocation fails, the **original** ///   memory block is not freed and remains valid.
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn reallocate(
