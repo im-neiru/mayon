@@ -86,8 +86,8 @@ pub unsafe extern "C" fn deallocate(ptr: *mut u8) {
 /// # Returns
 ///
 /// - On success: A pointer to the new memory block.
-/// - On failure: A null pointer. Note that if reallocation fails, the **original** ///   memory block is not freed and remains valid.
-#[inline]
+/// - On failure: A null pointer. Note that if reallocation fails, the **original**
+///   memory block is not freed and remains valid.
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn reallocate(
     old_ptr: *mut u8,
