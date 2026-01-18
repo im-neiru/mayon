@@ -1,4 +1,4 @@
-use core::{ffi::c_void, mem, ptr::null_mut};
+use core::{ffi::c_void, ptr::null_mut};
 
 unsafe extern "C" {
     /// C11 aligned allocation.
@@ -10,41 +10,37 @@ unsafe extern "C" {
     /// Returns null on failure.
     pub(crate) unsafe fn aligned_alloc(alignment: usize, size: usize) -> *mut c_void;
 
-    /// POSIX-aligned allocation.
-    ///
-    /// Returns:
-    /// - 0 on success
-    /// - error code (EINVAL / ENOMEM) on failure
-    pub(crate) unsafe fn posix_memalign(
-        memptr: *mut *mut c_void,
-        alignment: usize,
-        size: usize,
-    ) -> i32;
-
     /// Frees memory allocated by `aligned_alloc`, `posix_memalign`, or `malloc`.
     pub(crate) unsafe fn free(ptr: *mut c_void);
 }
 
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn allocate(size: usize, alignment: usize) -> *mut u8 {
-    if alignment < mem::size_of::<usize>() || !alignment.is_power_of_two() {
-        return ptr::null_mut();
+    let layout = BlockLayout::new(size, alignment);
+
+    let start_ptr = unsafe { aligned_alloc(layout.alignment, layout.size) as *mut u8 };
+
+    if start_ptr.is_null() {
+        return null_mut();
     }
 
-    let mut ptr: *mut c_void = ptr::null_mut();
+    let ptr = start_ptr.byte_add(layout.data_offset);
 
-    let err = unsafe { posix_memalign(&mut ptr, alignment, size) };
+    ptr.byte_sub(HEADER_SIZE)
+        .cast::<Header>()
+        .write(Header { size, start_ptr });
 
-    if err != 0 {
-        ptr::null_mut()
-    } else {
-        ptr.cast()
-    }
+    ptr
 }
 
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn deallocate(ptr: *mut u8) {
-    free(ptr.cast())
+    let Some(header) = ptr.byte_sub(HEADER_SIZE).cast::<Header>().as_ref() else {
+        return;
+    };
+
+    free(header.start_ptr.cast())
 }
 
 #[inline]
@@ -54,17 +50,35 @@ pub unsafe extern "C" fn reallocate(
     new_size: usize,
     alignment: usize,
 ) -> *mut u8 {
+    let Some(&Header {
+        size: old_size,
+        start_ptr: old_start_ptr,
+    }) = old_ptr.byte_sub(HEADER_SIZE).cast::<Header>().as_ref()
+    else {
+        return null_mut();
+    };
+
     let ptr = allocate(new_size, alignment);
 
     if ptr.is_null() {
         return null_mut();
     }
 
-    let old_size; // todo
-
     ptr.copy_from_nonoverlapping(old_ptr, old_size.min(new_size));
 
+    free(old_start_ptr.cast());
+
     ptr
+}
+
+const HEADER_SIZE: usize = size_of::<Header>();
+
+#[cfg_attr(target_pointer_width = "64", repr(C, align(8)))]
+#[cfg_attr(target_pointer_width = "32", repr(C, align(4)))]
+#[derive(Clone, Copy, Debug)]
+struct Header {
+    size: usize,
+    start_ptr: *mut u8,
 }
 
 struct BlockLayout {
@@ -74,15 +88,13 @@ struct BlockLayout {
 }
 
 impl BlockLayout {
-    const WORD_SIZE: usize = size_of::<usize>();
-
+    #[inline(always)]
     fn new(requested_size: usize, requested_alignment: usize) -> Self {
-        let alignment = requested_alignment.max(Self::WORD_SIZE);
+        let alignment = requested_alignment.max(HEADER_SIZE);
         debug_assert!(alignment.is_power_of_two());
 
-        let data_offset = Self::WORD_SIZE.next_multiple_of(alignment);
-
-        let size = data_offset + requested_size;
+        let data_offset = HEADER_SIZE.next_multiple_of(alignment);
+        let size = (data_offset + requested_size).next_multiple_of(alignment);
 
         Self {
             data_offset,
