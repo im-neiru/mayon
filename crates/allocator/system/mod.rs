@@ -1,3 +1,4 @@
+#[cfg(not(miri))]
 #[cfg(all(not(target_family = "windows"), target_env = "gnu"))]
 #[path = "gnu.rs"]
 pub mod raw;
