@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # internal crates
-allocator = { path = "../allocator", features = ["for_c_api"] }
+allocator = { path = "../allocator", features = ["sys_raw"] }
 mayon = { path = "../mayon", features = ["allocator"] }
 
 # workspace crates

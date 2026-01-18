@@ -25,7 +25,6 @@ pub unsafe trait Allocator {
     }
 }
 
-#[cfg(not(miri))]
 #[cfg(test)]
 mod tests {
     use crate::Allocator;
@@ -77,6 +76,74 @@ mod tests {
             assert_eq!(res_shrunk.len(), 16);
 
             system.deallocate(ptr_shrunk);
+        }
+    }
+
+    #[test]
+    fn test_alignment_comprehensive() {
+        unsafe {
+            let system = crate::System;
+
+            let alignments = [1usize, 2, 4, 8, 16, 32, 64, 128];
+
+            for &alignment in &alignments {
+                let size = 3 * alignment;
+
+                let layout = Layout::from_size_align(size, alignment).unwrap();
+                let res = system
+                    .allocate(layout)
+                    .unwrap_or_else(|_| panic!("alloc failed (align = {})", alignment));
+
+                let ptr = NonNull::new(res.as_ptr() as *mut u8).unwrap();
+                let addr = ptr.as_ptr() as usize;
+
+                assert_eq!(
+                    addr % alignment,
+                    0,
+                    "base alloc: {:p} not {}-byte aligned",
+                    ptr.as_ptr(),
+                    alignment
+                );
+
+                ptr.as_ptr().write_bytes(0xAB, size);
+                assert_eq!(*ptr.as_ptr(), 0xAB);
+
+                let grown_layout = Layout::from_size_align(size * 2, alignment).unwrap();
+                let grown = system.grow(ptr, grown_layout).expect("grow failed");
+
+                let grown_ptr = NonNull::new(grown.as_ptr() as *mut u8).unwrap();
+                let grown_addr = grown_ptr.as_ptr() as usize;
+
+                assert_eq!(
+                    grown_addr % alignment,
+                    0,
+                    "grow: {:p} not {}-byte aligned",
+                    grown_ptr.as_ptr(),
+                    alignment
+                );
+
+                assert_eq!(*grown_ptr.as_ptr(), 0xAB);
+
+                let shrink_layout = Layout::from_size_align(alignment, alignment).unwrap();
+                let shrunk = system
+                    .shrink(grown_ptr, shrink_layout)
+                    .expect("shrink failed");
+
+                let shrunk_ptr = NonNull::new(shrunk.as_ptr() as *mut u8).unwrap();
+                let shrunk_addr = shrunk_ptr.as_ptr() as usize;
+
+                assert_eq!(
+                    shrunk_addr % alignment,
+                    0,
+                    "shrink: {:p} not {}-byte aligned",
+                    shrunk_ptr.as_ptr(),
+                    alignment
+                );
+
+                assert_eq!(*shrunk_ptr.as_ptr(), 0xAB);
+
+                system.deallocate(shrunk_ptr);
+            }
         }
     }
 }

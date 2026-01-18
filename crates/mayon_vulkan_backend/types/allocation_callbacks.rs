@@ -139,6 +139,7 @@ pub(crate) type FnInternalFreeNotification = Option<
 #[repr(transparent)]
 pub(crate) struct SystemAllocationScope(pub(crate) i32);
 
+#[allow(unused)]
 impl SystemAllocationScope {
     pub(crate) const COMMAND: Self = Self(0);
     pub(crate) const OBJECT: Self = Self(1);
@@ -152,5 +153,6 @@ impl SystemAllocationScope {
 pub(crate) struct InternalAllocationType(pub(crate) i32);
 
 impl InternalAllocationType {
+    #[allow(unused)]
     pub(crate) const EXECUTABLE: Self = Self(0);
 }

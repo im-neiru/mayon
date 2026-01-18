@@ -71,11 +71,13 @@ where
         }
     }
 
+    #[allow(unused)]
     #[inline(always)]
     pub(crate) fn backend(&self) -> &dyn Backend {
         unsafe { self.0.as_ref().backend.assume_init_ref().deref() }
     }
 
+    #[allow(unused)]
     #[inline(always)]
     pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
         unsafe { self.0.as_mut().backend.assume_init_mut().deref_mut() }

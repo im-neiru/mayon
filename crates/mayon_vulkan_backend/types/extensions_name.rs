@@ -11,6 +11,7 @@ impl ExtensionName {
     pub const XLIB_SURFACE: Self = Self::new(c"VK_KHR_xlib_surface");
     pub const WAYLAND_SURFACE: Self = Self::new(c"VK_KHR_wayland_surface");
     pub const ANDROID_SURFACE: Self = Self::new(c"VK_KHR_android_surface");
+    #[allow(unused)]
     pub const IOS_SURFACE: Self = Self::new(c"VK_MVK_ios_surface");
     pub const MACOS_SURFACE: Self = Self::new(c"VK_MVK_macos_surface");
 

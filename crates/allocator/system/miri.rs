@@ -1,114 +1,111 @@
-pub mod c_api {
-    use std::alloc as rs;
+use std::alloc as rs;
 
-    use core::{alloc::Layout, ptr::NonNull};
+use core::{
+    alloc::Layout,
+    ptr::{NonNull, null_mut},
+};
 
-    use crate::{AllocError, allocator::AllocResult};
+const LAYOUT_OF_STRUCT_LAYOUT: Layout = Layout::new::<Layout>();
 
-    const LAYOUT_OF_STRUCT_LAYOUT: Layout = Layout::new::<Layout>();
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub unsafe extern "C" fn allocate(size: usize, alignment: usize) -> *mut u8 {
+    let Ok(data_layout) = Layout::from_size_align(size, alignment) else {
+        return null_mut();
+    };
 
-    #[inline]
-    pub unsafe fn allocate(data_layout: Layout) -> AllocResult {
-        let (block_layout, [layout_offset, data_offset]) = compute_layout(data_layout)?;
+    let Some((block_layout, [layout_offset, data_offset])) = compute_layout(data_layout) else {
+        return null_mut();
+    };
 
-        let Some(ptr) = NonNull::new(unsafe { rs::alloc(block_layout) }) else {
-            return Err(AllocError);
-        };
+    let Some(ptr) = NonNull::new(rs::alloc(block_layout)) else {
+        return null_mut();
+    };
 
-        // store data layout
-        unsafe {
-            ptr.byte_add(layout_offset)
+    // store data layout
+
+    ptr.byte_add(layout_offset)
+        .cast::<Layout>()
+        .write(data_layout);
+
+    ptr.byte_add(data_offset).as_ptr()
+}
+
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub unsafe extern "C" fn deallocate(ptr: *mut u8) {
+    let data_layout = {
+        // recover data layout from header
+        let layout_ptr = {
+            ptr.byte_sub(LAYOUT_OF_STRUCT_LAYOUT.size())
                 .cast::<Layout>()
-                .write(data_layout)
         };
 
-        let data_slice_ptr = NonNull::slice_from_raw_parts(
-            unsafe { ptr.byte_add(data_offset).cast() },
-            data_layout.size(),
-        );
+        layout_ptr.read()
+    };
 
-        Ok(data_slice_ptr)
-    }
+    let Some((block_layout, [_, data_offset])) = compute_layout(data_layout) else {
+        unreachable!("There is a memory bug related to layout");
+    };
 
-    #[inline]
-    pub unsafe fn deallocate(ptr: NonNull<u8>) {
-        let data_layout = unsafe {
-            // recover data layout from header
-            let layout_ptr = {
-                ptr.byte_sub(LAYOUT_OF_STRUCT_LAYOUT.size())
-                    .cast::<Layout>()
-            };
+    // deallocate the full block
+    let header_ptr = ptr.byte_sub(data_offset);
 
+    rs::dealloc(header_ptr, block_layout);
+}
+
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub unsafe extern "C" fn reallocate(
+    old_ptr: *mut u8,
+    new_size: usize,
+    alignment: usize,
+) -> *mut u8 {
+    let Ok(data_layout) = Layout::from_size_align(new_size, alignment) else {
+        return null_mut();
+    };
+
+    let Some((new_layout, [new_layout_offset, new_data_offset])) = compute_layout(data_layout)
+    else {
+        return null_mut();
+    };
+
+    let Some((old_layout, [_, data_offset])) = ({
+        let old_data_layout = {
+            // recover old data layout from header
+            let layout_ptr = old_ptr
+                .byte_sub(LAYOUT_OF_STRUCT_LAYOUT.size())
+                .cast::<Layout>();
             layout_ptr.read()
         };
 
-        let Ok((block_layout, [_, data_offset])) = compute_layout(data_layout) else {
-            unreachable!("There is a memory bug related to layout");
-        };
+        compute_layout(old_data_layout)
+    }) else {
+        return null_mut();
+    };
 
-        // deallocate the full block
-        let header_ptr = unsafe { ptr.as_ptr().byte_sub(data_offset) };
+    let header_ptr = old_ptr.byte_sub(data_offset);
 
-        unsafe { rs::dealloc(header_ptr, block_layout) };
-    }
+    let Some(ptr) = NonNull::new(rs::realloc(header_ptr, old_layout, new_layout.size())) else {
+        return null_mut();
+    };
 
-    /// Reallocates an existing allocation to a new layout.
-    ///
-    /// # Safety
-    ///
-    /// - `ptr` must be a valid allocation from this module.
-    /// - Any existing references to the allocation must not be used after
-    ///   this call.
-    /// - The returned memory must eventually be freed using [`deallocate`].
-    #[inline]
-    pub unsafe fn reallocate(old_ptr: NonNull<u8>, data_layout: Layout) -> AllocResult {
-        let (new_layout, [new_layout_offset, new_data_offset]) = compute_layout(data_layout)?;
+    // store new block layout
 
-        let (old_layout, [_, data_offset]) = {
-            let old_data_layout = unsafe {
-                // recover old data layout from header
-                let layout_ptr = old_ptr
-                    .byte_sub(LAYOUT_OF_STRUCT_LAYOUT.size())
-                    .cast::<Layout>();
-                layout_ptr.read()
-            };
+    ptr.byte_add(new_layout_offset)
+        .cast::<Layout>()
+        .write(data_layout);
 
-            compute_layout(old_data_layout)?
-        };
+    ptr.byte_add(new_data_offset).as_ptr()
+}
 
-        let header_ptr = unsafe { old_ptr.byte_sub(data_offset) };
+#[inline(always)]
+const fn compute_layout(data_layout: Layout) -> Option<(Layout, [usize; 2])> {
+    let Ok((block_layout, data_offset)) = LAYOUT_OF_STRUCT_LAYOUT.extend(data_layout) else {
+        return None;
+    };
 
-        let ptr = unsafe {
-            NonNull::new_unchecked(rs::realloc(
-                header_ptr.as_ptr(),
-                old_layout,
-                new_layout.size(),
-            ))
-        };
+    let layout_offset = data_offset.saturating_sub(LAYOUT_OF_STRUCT_LAYOUT.size());
 
-        // store new block layout
-        unsafe {
-            ptr.byte_add(new_layout_offset)
-                .cast::<Layout>()
-                .write(data_layout)
-        };
-
-        let data_slice_ptr = NonNull::slice_from_raw_parts(
-            unsafe { ptr.byte_add(new_data_offset).cast() },
-            data_layout.size(),
-        );
-
-        Ok(data_slice_ptr)
-    }
-
-    #[inline(always)]
-    const fn compute_layout(data_layout: Layout) -> Result<(Layout, [usize; 2]), AllocError> {
-        let Ok((block_layout, data_offset)) = LAYOUT_OF_STRUCT_LAYOUT.extend(data_layout) else {
-            return Err(AllocError);
-        };
-
-        let layout_offset = data_offset.saturating_sub(LAYOUT_OF_STRUCT_LAYOUT.size());
-
-        Ok((block_layout, [layout_offset, data_offset]))
-    }
+    Some((block_layout, [layout_offset, data_offset]))
 }
