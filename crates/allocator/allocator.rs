@@ -25,7 +25,6 @@ pub unsafe trait Allocator {
     }
 }
 
-#[cfg(not(miri))]
 #[cfg(test)]
 mod tests {
     use crate::Allocator;
