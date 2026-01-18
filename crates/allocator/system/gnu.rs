@@ -135,7 +135,10 @@ impl BlockLayout {
     #[inline(always)]
     fn new(requested_size: usize, requested_alignment: usize) -> Option<Self> {
         let alignment = requested_alignment.max(HEADER_SIZE);
-        debug_assert!(alignment.is_power_of_two());
+
+        if alignment.is_power_of_two() {
+            return None;
+        }
 
         let data_offset = HEADER_SIZE.next_multiple_of(alignment);
 

@@ -65,9 +65,13 @@ where
     ) -> Option<NonNull<c_void>> {
         let allocator = allocator.as_ref();
 
+        let Ok(layout) = Layout::from_size_align(size, alignment) else {
+            return None;
+        };
+
         let Ok(ptr) = allocator.reallocate(
             transmute::<Option<NonNull<c_void>>, NonNull<u8>>(original),
-            Layout::from_size_align_unchecked(size, alignment),
+            layout,
         ) else {
             return None;
         };
