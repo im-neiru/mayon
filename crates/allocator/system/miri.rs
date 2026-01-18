@@ -78,12 +78,10 @@ pub mod c_api {
 
         let header_ptr = unsafe { old_ptr.byte_sub(data_offset) };
 
-        let ptr = unsafe {
-            NonNull::new_unchecked(rs::realloc(
-                header_ptr.as_ptr(),
-                old_layout,
-                new_layout.size(),
-            ))
+        let Some(ptr) = NonNull::new(unsafe {
+            rs::realloc(header_ptr.as_ptr(), old_layout, new_layout.size())
+        }) else {
+            return Err(AllocError);
         };
 
         // store new block layout
