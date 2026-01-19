@@ -93,7 +93,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         target_platform: None, // TODO: add c-api for target platforms
     };
 
-    match Instance::new_in::<'static, VulkanBackend<'_, allocator::MynCustomAllocator>>(
+    match Instance::<allocator::MynCustomAllocator, DefaultLogger, VulkanBackend>::new_in::<'_>(
         rust_params,
         if allocator.is_null() {
             allocator::MynCustomAllocator::DEFAULT
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
     let Some(instance) = instance
         .as_mut()
-        .map(MynInstance::inner_mut::<MynCustomAllocator, DefaultLogger>)
+        .map(MynInstance::inner_mut::<MynCustomAllocator, DefaultLogger, VulkanBackend>)
     else {
         return;
     };
