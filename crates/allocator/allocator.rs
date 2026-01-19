@@ -1,4 +1,8 @@
-use core::{alloc::Layout, ptr::NonNull};
+use core::{
+    alloc::Layout,
+    mem::{MaybeUninit, align_of, size_of},
+    ptr::NonNull,
+};
 
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 #[error("Allocation Error")]
@@ -22,6 +26,15 @@ pub unsafe trait Allocator {
     #[inline]
     unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { self.reallocate(ptr, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn allocate_uninit<T>(&self) -> Result<NonNull<MaybeUninit<T>>, AllocError> {
+        let layout = Layout::new::<T>();
+
+        let ptr = unsafe { self.allocate(layout) }?;
+
+        Ok(ptr.cast())
     }
 }
 
