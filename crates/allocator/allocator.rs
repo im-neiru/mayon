@@ -1,8 +1,5 @@
-use core::{
-    alloc::Layout,
-    mem::{MaybeUninit, align_of, size_of},
-    ptr::NonNull,
-};
+use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
+use std::ptr::without_provenance;
 
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 #[error("Allocation Error")]
@@ -32,6 +29,10 @@ pub unsafe trait Allocator {
     unsafe fn allocate_uninit<T>(&self) -> Result<NonNull<MaybeUninit<T>>, AllocError> {
         let layout = Layout::new::<T>();
 
+        if layout.size() == 0 {
+            return Ok(NonNull::dangling());
+        }
+
         debug_assert_eq!(layout, Layout::new::<MaybeUninit<T>>());
 
         let ptr = unsafe { self.allocate(layout) }?;
@@ -47,6 +48,10 @@ pub unsafe trait Allocator {
     #[inline]
     unsafe fn deallocate_init<T>(&self, ptr: NonNull<T>) {
         unsafe {
+            if ptr == NonNull::<T>::dangling() {
+                return;
+            }
+
             ptr.drop_in_place();
 
             self.deallocate(ptr.cast())
