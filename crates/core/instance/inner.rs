@@ -1,5 +1,5 @@
 use core::{
-    ops::{Deref, DerefMut},
+    mem::offset_of,
     ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
@@ -55,12 +55,29 @@ where
         };
 
         unsafe {
-            let inner = buffer.as_mut().assume_init_mut();
+            buffer
+                .byte_add(offset_of!(Inner<B, L, A>, allocator))
+                .cast()
+                .write(allocator);
 
-            inner.allocator = allocator;
-            inner.logger = logger;
-            inner.ref_count = AtomicUsize::new(1);
-            inner.backend = B::create(&inner.allocator, &mut inner.logger, params)?;
+            buffer
+                .byte_add(offset_of!(Inner<B, L, A>, logger))
+                .cast()
+                .write(logger);
+
+            buffer
+                .byte_add(offset_of!(Inner<B, L, A>, ref_count))
+                .cast()
+                .write(AtomicUsize::new(1));
+
+            buffer
+                .byte_add(offset_of!(Inner<B, L, A>, backend))
+                .cast()
+                .write(B::create(
+                    &buffer.as_ref().assume_init_ref().allocator,
+                    &mut buffer.as_mut().assume_init_mut().logger,
+                    params,
+                )?);
         }
 
         Ok(Self(buffer.cast()))
