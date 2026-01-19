@@ -28,11 +28,12 @@ enum MynFallibleResult
   /**
    * @brief A backend failed to initialize due to a platform or loader error.
    */
-  MAYON_RESULT_BACKEND_LOAD_ERROR = 40961,
+  MAYON_RESULT_BACKEND_ALLOCATION = 40961,
+  MAYON_RESULT_BACKEND_LOAD_ERROR = 40962,
   /**
    * @brief Unsupported target windowing platform
    */
-  MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 40962,
+  MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 40963,
   /**
    * @brief Vulkan could not be loaded or initialized.
    */

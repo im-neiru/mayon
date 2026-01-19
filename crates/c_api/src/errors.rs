@@ -6,7 +6,7 @@ use core::{
 use std::ptr::null;
 
 use mayon::{
-    CreateBackendErrorKind, BaseError, CreateBackendError,
+    BaseError, CreateBackendError, CreateBackendErrorKind,
     backends::vulkan::ErrorKind as VulkanErrorKind,
 };
 
@@ -21,6 +21,7 @@ pub(crate) enum Error {
     NullArg {
         name: &'static CStr,
     },
+    InstanceAllocation,
     UnsupportedTargetPlatform,
     FailedBackendLoad {
         name: &'static CStr,
@@ -88,6 +89,11 @@ pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> My
 
             MynFallibleResult::MAYON_RESULT_VULKAN_LOAD_ERROR
         }
+        CreateBackendErrorKind::AllocationFailed => {
+            LAST_ERROR.set(Some(Error::InstanceAllocation));
+
+            MynFallibleResult::MAYON_RESULT_BACKEND_ALLOCATION
+        }
     }
 }
 
@@ -110,6 +116,7 @@ pub(crate) fn get_message() -> *const c_char {
 
         match err {
             Error::NullArg { name } => store_message(format!("Null pointer argument: {:?}", name)),
+            Error::InstanceAllocation => store_message("Instance allocation failed".to_string()),
             Error::UnsupportedTargetPlatform => {
                 store_message("UnsupportedPlatformError".to_string())
             }

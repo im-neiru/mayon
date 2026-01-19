@@ -28,10 +28,11 @@ pub enum MynFallibleResult {
 
     // --- Platform General Error (class=02) ---
     /// @brief A backend failed to initialize due to a platform or loader error.
-    MAYON_RESULT_BACKEND_LOAD_ERROR = 0o1_2_00_01, // subsystem=0, detail=1
+    MAYON_RESULT_BACKEND_ALLOCATION = 0o1_2_00_01, // subsystem=0, detail=1
+    MAYON_RESULT_BACKEND_LOAD_ERROR = 0o1_2_00_02, // subsystem=0, detail=2
 
     /// @brief Unsupported target windowing platform
-    MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 0o1_2_00_02, // subsystem=0, detail=2
+    MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 0o1_2_00_03, // subsystem=0, detail=3
 
     // --- Backend Graphics API Errors (class=03) ---
     /// @brief Vulkan could not be loaded or initialized.
