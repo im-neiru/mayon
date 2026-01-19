@@ -32,7 +32,14 @@ pub unsafe trait Allocator {
     unsafe fn allocate_uninit<T>(&self) -> Result<NonNull<MaybeUninit<T>>, AllocError> {
         let layout = Layout::new::<T>();
 
+        debug_assert_eq!(layout, Layout::new::<MaybeUninit<T>>());
+
         let ptr = unsafe { self.allocate(layout) }?;
+
+        debug_assert!(
+            ptr.addr().get() % layout.align() == 0,
+            "allocator returned misaligned pointer"
+        );
 
         Ok(ptr.cast())
     }
