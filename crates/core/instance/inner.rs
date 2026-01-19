@@ -10,7 +10,7 @@ use crate::{
     Backend, BaseError, CreateBackend, CreateBackendError, CreateBackendErrorKind, logger::Logger,
 };
 
-pub(crate) struct Inner<A, L, B>
+pub(crate) struct Inner<B, L, A>
 where
     A: Allocator,
     L: Logger,
@@ -23,17 +23,17 @@ where
     ref_count: AtomicUsize,
 }
 
-pub(crate) struct ArcInner<A, L, B>(NonNull<Inner<A, L, B>>)
+pub(crate) struct ArcInner<B, L, A>(NonNull<Inner<B, L, A>>)
 where
+    B: Backend,
     A: Allocator,
-    L: Logger,
-    B: Backend;
+    L: Logger;
 
-impl<'s, A, L, B> ArcInner<A, L, B>
+impl<B, L, A> ArcInner<B, L, A>
 where
-    A: Allocator,
+    B: Backend,
     L: Logger,
-    B: Backend + CreateBackend<'s, A, L>,
+    A: Allocator,
 {
     /// Allocates and initializes a new ArcInner containing the given allocator, logger, and a backend created from `params`.
     ///
@@ -42,12 +42,15 @@ where
     /// # Errors
     ///
     /// Returns a `CreateBackendError` if backend creation fails.
-    pub(super) fn new(
+    pub(super) fn new<'s>(
         allocator: A,
         logger: L,
         params: B::Params,
-    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>> {
-        let Ok(mut buffer) = (unsafe { allocator.allocate_uninit::<Inner<A, L, B>>() }) else {
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
+    where
+        B: CreateBackend<'s, A, L>,
+    {
+        let Ok(mut buffer) = (unsafe { allocator.allocate_uninit::<Inner<B, L, A>>() }) else {
             return CreateBackendErrorKind::AllocationFailed.into_result();
         };
 
@@ -76,11 +79,11 @@ where
     // }
 }
 
-impl<A, L, B> Clone for ArcInner<A, L, B>
+impl<B, L, A> Clone for ArcInner<B, L, A>
 where
-    A: Allocator,
-    L: Logger,
     B: Backend,
+    L: Logger,
+    A: Allocator,
 {
     fn clone(&self) -> Self {
         const MAX_REFCOUNT: usize = (isize::MAX) as _;
@@ -97,11 +100,11 @@ where
     }
 }
 
-impl<A, L, B> Drop for ArcInner<A, L, B>
+impl<B, L, A> Drop for ArcInner<B, L, A>
 where
-    A: Allocator,
-    L: Logger,
     B: Backend,
+    L: Logger,
+    A: Allocator,
 {
     fn drop(&mut self) {
         unsafe {
@@ -119,17 +122,17 @@ where
     }
 }
 
-unsafe impl<A, L, B> Send for ArcInner<A, L, B>
+unsafe impl<B, L, A> Send for ArcInner<B, L, A>
 where
-    A: Allocator,
-    L: Logger,
     B: Backend,
+    L: Logger,
+    A: Allocator,
 {
 }
-unsafe impl<A, L, B> Sync for ArcInner<A, L, B>
+unsafe impl<B, L, A> Sync for ArcInner<B, L, A>
 where
-    A: Allocator,
-    L: Logger,
     B: Backend,
+    L: Logger,
+    A: Allocator,
 {
 }

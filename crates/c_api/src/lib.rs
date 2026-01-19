@@ -12,7 +12,7 @@ use mayon::{
     logger::DefaultLogger,
 };
 
-use crate::allocator::MynCustomAllocator;
+use allocator::MynCustomAllocator;
 
 /// @brief Vulkan backend initialization parameters.
 ///
@@ -93,10 +93,14 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         target_platform: None, // TODO: add c-api for target platforms
     };
 
-    match Instance::<allocator::MynCustomAllocator, DefaultLogger, VulkanBackend>::new_in::<'_>(
+    match Instance::<
+        VulkanBackend<'_, MynCustomAllocator>,
+        DefaultLogger,
+        allocator::MynCustomAllocator,
+    >::new_in::<'static>(
         rust_params,
         if allocator.is_null() {
-            allocator::MynCustomAllocator::DEFAULT
+            MynCustomAllocator::DEFAULT
         } else {
             *allocator
         },
@@ -128,10 +132,13 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
-    let Some(instance) = instance
-        .as_mut()
-        .map(MynInstance::inner_mut::<MynCustomAllocator, DefaultLogger, VulkanBackend>)
-    else {
+    let Some(instance) = instance.as_mut().map(
+        MynInstance::inner_mut::<
+            VulkanBackend<MynCustomAllocator>,
+            DefaultLogger,
+            MynCustomAllocator,
+        >,
+    ) else {
         return;
     };
 

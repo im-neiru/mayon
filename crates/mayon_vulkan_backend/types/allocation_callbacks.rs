@@ -17,7 +17,7 @@ pub(crate) type AllocationCallbacksRef<'a> = NonNull<AllocationCallbacks<'a, ()>
 
 impl<'a, A> AllocationCallbacks<'a, A>
 where
-    A: Allocator + 'static,
+    A: Allocator,
 {
     pub(crate) fn new(allocator: NonNull<A>) -> Self {
         Self {

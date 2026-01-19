@@ -12,7 +12,7 @@ fn main() {
     )
     .unwrap();
 
-    let _instance = mayon::Instance::new::<'static, VulkanBackend>(
+    let _instance = mayon::Instance::<VulkanBackend, _, _>::new::<'static>(
         VulkanBackendParams::default()
             .with_application_name(c"Mayon")
             .with_engine_name(c"Mayon Engine")

@@ -8,7 +8,7 @@ use crate::{fn_table::FnTable, types};
 
 pub struct VulkanBackend<'a, A = System>
 where
-    A: Allocator + 'static,
+    A: Allocator,
 {
     instance: types::Instance,
     alloc: types::AllocationCallbacks<'a, A>,

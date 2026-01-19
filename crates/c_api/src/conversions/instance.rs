@@ -3,39 +3,39 @@ use core::mem::transmute;
 use allocator::Allocator;
 use mayon::{Backend, Instance, logger::Logger};
 
-impl<A, L, B> From<Instance<A, L, B>> for crate::MynInstance
+impl<B, L, A> From<Instance<B, L, A>> for crate::MynInstance
 where
-    A: Allocator,
-    L: Logger,
     B: Backend,
+    L: Logger,
+    A: Allocator,
 {
     #[inline(always)]
-    fn from(value: Instance<A, L, B>) -> Self {
-        unsafe { transmute::<Instance<A, L, B>, Self>(value) }
+    fn from(value: Instance<B, L, A>) -> Self {
+        unsafe { transmute::<Instance<B, L, A>, Self>(value) }
     }
 }
 
 impl crate::MynInstance {
     #[inline(always)]
-    pub fn inner<A, L, B>(&self) -> &Instance<A, L, B>
+    pub fn inner<B, L, A>(&self) -> &Instance<B, L, A>
     where
-        A: Allocator,
-        L: Logger,
         B: Backend,
+        L: Logger,
+        A: Allocator,
     {
-        let ptr: *const Instance<A, L, B> = (self as *const Self).cast();
+        let ptr: *const Instance<B, L, A> = (self as *const Self).cast();
 
         unsafe { ptr.as_ref().unwrap_unchecked() }
     }
 
     #[inline(always)]
-    pub fn inner_mut<A, L, B>(&mut self) -> &mut Instance<A, L, B>
+    pub fn inner_mut<B, L, A>(&mut self) -> &mut Instance<B, L, A>
     where
-        A: Allocator,
-        L: Logger,
         B: Backend,
+        L: Logger,
+        A: Allocator,
     {
-        let ptr: *mut Instance<A, L, B> = (self as *mut Self).cast();
+        let ptr: *mut Instance<B, L, A> = (self as *mut Self).cast();
 
         unsafe { ptr.as_mut().unwrap_unchecked() }
     }
