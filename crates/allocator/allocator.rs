@@ -36,6 +36,15 @@ pub unsafe trait Allocator {
 
         Ok(ptr.cast())
     }
+
+    #[inline]
+    unsafe fn deallocate_init<T>(&self, ptr: NonNull<T>) {
+        unsafe {
+            ptr.drop_in_place();
+
+            self.deallocate(ptr.cast())
+        };
+    }
 }
 
 #[cfg(test)]
