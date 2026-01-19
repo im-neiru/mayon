@@ -1,6 +1,6 @@
 use core::panic::Location;
 
-use mayon_core::{BackendCreateKind::BackendInternal, BaseError, CreateBackendError};
+use mayon_core::{BaseError, CreateBackendError, CreateBackendErrorKind::BackendInternal};
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]

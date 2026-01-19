@@ -9,7 +9,7 @@ pub struct CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    pub(crate) kind: BackendCreateKind<B>,
+    pub(crate) kind: CreateBackendErrorKind<B>,
     #[cfg(feature = "error_location")]
     pub(crate) location: &'static Location<'static>,
 }
@@ -23,7 +23,7 @@ where
     /// The `location` argument is included only when the `error_location` feature is enabled
     /// and captures the caller location for diagnostic purposes.
     pub const fn new(
-        kind: BackendCreateKind<B>,
+        kind: CreateBackendErrorKind<B>,
         #[cfg(feature = "error_location")] location: &'static Location<'static>,
     ) -> Self {
         Self {
@@ -35,12 +35,14 @@ where
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
-pub enum BackendCreateKind<B>
+pub enum CreateBackendErrorKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
     #[error("Unsupported Target Window Platform")]
     UnsupportedTargetPlatform,
+    #[error("Allocating memory for Instance failed")]
+    AllocationFailed,
     #[error("{0}")]
     BackendInternal(B),
 }
@@ -49,7 +51,7 @@ impl<B> crate::BaseError for CreateBackendError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    type ErrorKind = BackendCreateKind<B>;
+    type ErrorKind = CreateBackendErrorKind<B>;
 
     /// Returns the error's kind.
     fn kind(&self) -> Self::ErrorKind {
@@ -64,7 +66,7 @@ where
     }
 }
 
-impl<B> BackendCreateKind<B>
+impl<B> CreateBackendErrorKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
