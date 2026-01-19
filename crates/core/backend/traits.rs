@@ -6,8 +6,8 @@ pub trait Backend {}
 
 pub trait CreateBackend<'s, A, L>
 where
-    A: Allocator + 'static,
-    L: Logger + 'static,
+    A: Allocator,
+    L: Logger,
     Self::Error: BaseError,
     Self: Backend,
 {

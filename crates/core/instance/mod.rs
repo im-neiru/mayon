@@ -1,4 +1,3 @@
-mod alloc;
 mod inner;
 
 use allocator::{Allocator, System};
@@ -8,15 +7,17 @@ use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logge
 use inner::ArcInner;
 
 #[derive(Clone)]
-pub struct Instance<A, L>(#[allow(unused)] ArcInner<A, L>)
+pub struct Instance<A, L, B>(#[allow(unused)] ArcInner<A, L, B>)
 where
-    A: Allocator + 'static,
-    L: Logger + 'static;
+    A: Allocator,
+    L: Logger,
+    B: Backend;
 
-impl<A, L> Instance<A, L>
+impl<'s, A, L, B> Instance<A, L, B>
 where
-    A: Allocator + 'static,
-    L: Logger + 'static,
+    A: Allocator,
+    L: Logger,
+    B: Backend + CreateBackend<'s, A, L>,
 {
     /// Creates an `Instance` by constructing backend `B` with the provided parameters, allocator, and logger.
     ///
@@ -28,23 +29,21 @@ where
     /// # Returns
     /// `Ok(Self)` containing the created instance, or `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` if backend creation fails.
     /// ```
-    pub fn new_in<'s, B>(
+    pub fn new_in(
         params: B::Params,
         allocator: A,
         logger: L,
-    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
-    where
-        B: Backend + CreateBackend<'s, A, L> + 'static,
-    {
-        let arc = ArcInner::new::<'s, B>(allocator, logger, params)?;
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>> {
+        let arc = ArcInner::new(allocator, logger, params)?;
 
         Ok(Self(arc))
     }
 }
 
-impl<L> Instance<System, L>
+impl<'s, L, B> Instance<System, L, B>
 where
-    L: Logger + 'static,
+    L: Logger,
+    B: Backend + CreateBackend<'s, System, L>,
 {
     /// Creates a new Instance using the global allocator for backend `B`.
     ///
@@ -52,13 +51,10 @@ where
     ///
     /// `Ok(Self)` if backend creation succeeds, `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` otherwise.
     #[inline]
-    pub fn new<'s, B>(
+    pub fn new(
         params: B::Params,
         logger: L,
-    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
-    where
-        B: Backend + CreateBackend<'s, System, L> + 'static,
-    {
-        Self::new_in::<B>(params, System, logger)
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>> {
+        Self::new_in(params, System, logger)
     }
 }
