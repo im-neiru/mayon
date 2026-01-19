@@ -1,8 +1,10 @@
 use allocator::Allocator;
 
-use crate::{BaseError, CreateBackendError, logger::Logger};
+use crate::{BaseError, CreateBackendError, context::Context, logger::Logger};
 
-pub trait Backend {}
+pub trait Backend {
+    type Context: Context;
+}
 
 pub trait CreateBackend<'s, A, L>
 where

@@ -14,7 +14,12 @@ where
     alloc: types::AllocationCallbacks<'a, A>,
 }
 
-impl<'a, A> mayon_core::Backend for VulkanBackend<'a, A> where A: Allocator {}
+impl<'a, A> mayon_core::Backend for VulkanBackend<'a, A>
+where
+    A: Allocator,
+{
+    type Context = crate::VulkanContext;
+}
 
 impl<'a, A> Drop for VulkanBackend<'a, A>
 where
