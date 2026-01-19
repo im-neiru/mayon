@@ -1,5 +1,4 @@
 use core::{
-    mem::MaybeUninit,
     ops::{Deref, DerefMut},
     ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering, fence},
@@ -7,31 +6,34 @@ use core::{
 
 use allocator::Allocator;
 
-use crate::{Backend, BaseError, CreateBackend, CreateBackendError, logger::Logger};
+use crate::{
+    Backend, BaseError, CreateBackend, CreateBackendError, CreateBackendErrorKind, logger::Logger,
+};
 
-use super::alloc::{BackendBox, allocate, deallocate};
-
-pub(crate) struct Inner<A, L>
+pub(crate) struct Inner<A, L, B>
 where
     A: Allocator,
     L: Logger,
+    B: Backend,
 {
     allocator: A,
     logger: L,
-    backend: MaybeUninit<BackendBox>,
+    backend: B,
 
     ref_count: AtomicUsize,
 }
 
-pub(crate) struct ArcInner<A, L>(NonNull<Inner<A, L>>)
+pub(crate) struct ArcInner<A, L, B>(NonNull<Inner<A, L, B>>)
 where
     A: Allocator,
-    L: Logger;
+    L: Logger,
+    B: Backend;
 
-impl<A, L> ArcInner<A, L>
+impl<'s, A, L, B> ArcInner<A, L, B>
 where
-    A: Allocator + 'static,
-    L: Logger + 'static,
+    A: Allocator,
+    L: Logger,
+    B: Backend + CreateBackend<'s, A, L>,
 {
     /// Allocates and initializes a new ArcInner containing the given allocator, logger, and a backend created from `params`.
     ///
@@ -40,54 +42,45 @@ where
     /// # Errors
     ///
     /// Returns a `CreateBackendError` if backend creation fails.
-    pub(super) fn new<'s, B>(
+    pub(super) fn new(
         allocator: A,
         logger: L,
         params: B::Params,
-    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
-    where
-        B: Backend + CreateBackend<'s, A, L> + 'static,
-    {
+    ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>> {
+        let Ok(mut buffer) = (unsafe { allocator.allocate_uninit::<Inner<A, L, B>>() }) else {
+            return CreateBackendErrorKind::AllocationFailed.into_result();
+        };
+
         unsafe {
-            let mut buffer = allocate(&allocator, MaybeUninit::<Inner<A, L>>::uninit());
-
-            buffer.as_mut().write(Inner {
-                allocator,
-                logger,
-                backend: MaybeUninit::uninit(),
-                ref_count: AtomicUsize::new(1),
-            });
-
             let inner = buffer.as_mut().assume_init_mut();
 
-            let backend = BackendBox::new_in(
-                &inner.allocator,
-                B::create(&inner.allocator, &mut inner.logger, params)?,
-            );
-
-            buffer.as_mut().assume_init_mut().backend = MaybeUninit::new(backend);
-
-            Ok(Self(buffer.cast()))
+            inner.allocator = allocator;
+            inner.logger = logger;
+            inner.ref_count = AtomicUsize::new(1);
+            inner.backend = B::create(&inner.allocator, &mut inner.logger, params)?;
         }
+
+        Ok(Self(buffer.cast()))
     }
 
-    #[allow(unused)]
-    #[inline(always)]
-    pub(crate) fn backend(&self) -> &dyn Backend {
-        unsafe { self.0.as_ref().backend.assume_init_ref().deref() }
-    }
+    // #[allow(unused)]
+    // #[inline(always)]
+    // pub(crate) fn backend(&self) -> &dyn Backend {
+    //     unsafe { self.0.as_ref().backend.assume_init_ref().deref() }
+    // }
 
-    #[allow(unused)]
-    #[inline(always)]
-    pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
-        unsafe { self.0.as_mut().backend.assume_init_mut().deref_mut() }
-    }
+    // #[allow(unused)]
+    // #[inline(always)]
+    // pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
+    //     unsafe { self.0.as_mut().backend.assume_init_mut().deref_mut() }
+    // }
 }
 
-impl<A, L> Clone for ArcInner<A, L>
+impl<A, L, B> Clone for ArcInner<A, L, B>
 where
     A: Allocator,
     L: Logger,
+    B: Backend,
 {
     fn clone(&self) -> Self {
         const MAX_REFCOUNT: usize = (isize::MAX) as _;
@@ -104,10 +97,11 @@ where
     }
 }
 
-impl<A, L> Drop for ArcInner<A, L>
+impl<A, L, B> Drop for ArcInner<A, L, B>
 where
     A: Allocator,
     L: Logger,
+    B: Backend,
 {
     fn drop(&mut self) {
         unsafe {
@@ -120,12 +114,22 @@ where
             let Self(this) = self;
             let allocator = &this.as_ref().allocator;
 
-            this.as_ref().backend.assume_init_ref().drop(allocator);
-
-            deallocate(allocator, *this);
+            allocator.deallocate_init(*this);
         }
     }
 }
 
-unsafe impl<A: Allocator + Send, L: Logger> Send for ArcInner<A, L> {}
-unsafe impl<A: Allocator + Sync, L: Logger> Sync for ArcInner<A, L> {}
+unsafe impl<A, L, B> Send for ArcInner<A, L, B>
+where
+    A: Allocator,
+    L: Logger,
+    B: Backend,
+{
+}
+unsafe impl<A, L, B> Sync for ArcInner<A, L, B>
+where
+    A: Allocator,
+    L: Logger,
+    B: Backend,
+{
+}
