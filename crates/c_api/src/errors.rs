@@ -7,7 +7,7 @@ use std::ptr::null;
 
 use mayon::{
     BaseError, CreateBackendError, CreateBackendErrorKind,
-    backends::vulkan::ErrorKind as VulkanErrorKind,
+    backends::vulkan::VulkanError as VulkanErrorKind,
 };
 
 use crate::fallible_result::MynFallibleResult;

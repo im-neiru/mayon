@@ -4,7 +4,7 @@ mod errors;
 mod fn_table;
 mod types;
 
-pub use errors::{Error, ErrorKind, Result};
+pub use errors::{Result, VulkanError, VulkanErrorKind};
 pub use fn_table::VulkanFunctionName;
 
 pub use backend::{VulkanBackend, VulkanBackendParams, VulkanVersion};

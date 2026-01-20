@@ -8,7 +8,7 @@ use mayon_core::{
 use utils::{BufferOverflowError, InlineVec};
 
 use crate::{
-    Error, VulkanBackend,
+    VulkanError, VulkanBackend,
     backend::FnTable,
     types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
@@ -18,7 +18,7 @@ where
     L: Logger,
     A: Allocator,
 {
-    type Error = Error;
+    type Error = VulkanError;
     type Params = VulkanBackendParams<'s>;
 
     /// Creates a new Vulkan backend instance configured by `params`.

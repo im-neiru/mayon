@@ -2,7 +2,7 @@ use core::mem::transmute;
 
 #[cfg(feature = "error_location")]
 use crate::VulkanFunctionName;
-use crate::{Error, ErrorKind::VulkanFunctionError, Result};
+use crate::{Result, VulkanError, VulkanErrorKind::FunctionReturn};
 
 #[repr(i32)]
 #[allow(unused)]
@@ -72,8 +72,8 @@ impl VkResult {
         if Self::Success == self {
             Ok(success())
         } else {
-            Err(Error {
-                kind: VulkanFunctionError {
+            Err(VulkanError {
+                kind: FunctionReturn {
                     name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },
@@ -92,8 +92,8 @@ impl VkResult {
         if Self::Success == self {
             Ok(success())
         } else {
-            Err(Error {
-                kind: VulkanFunctionError {
+            Err(VulkanError {
+                kind: FunctionReturn {
                     name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },

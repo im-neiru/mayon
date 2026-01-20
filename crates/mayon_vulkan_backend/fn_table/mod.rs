@@ -11,7 +11,7 @@ use once_cell::sync::OnceCell;
 use VulkanFunctionName::*;
 
 use crate::{
-    ErrorKind,
+    VulkanErrorKind,
     types::{
         AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
         Win32SurfaceCreateInfo,
@@ -72,7 +72,7 @@ impl FnTable {
 
                 library: Some(library),
             }),
-            Err(_) => ErrorKind::VulkanLoad.into_result(),
+            Err(_) => VulkanErrorKind::LibraryLoad.into_result(),
         }
     }
 }
@@ -107,7 +107,7 @@ impl FnTable {
         allocator: AllocationCallbacksRef,
     ) -> super::Result<Surface> {
         let Some(fn_create_win32_surface) = self.fn_create_win32_surface else {
-            return ErrorKind::FunctionLoadFailed {
+            return VulkanErrorKind::FunctionLoadFailed {
                 name: CreateWin32Surface,
             }
             .into_result();

@@ -4,31 +4,31 @@ use mayon_core::{BaseError, CreateBackendError, CreateBackendErrorKind::BackendI
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
-pub struct Error {
-    pub(crate) kind: ErrorKind,
+pub struct VulkanError {
+    pub(crate) kind: VulkanErrorKind,
     #[cfg(feature = "error_location")]
     pub(crate) location: &'static Location<'static>,
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
-pub enum ErrorKind {
-    #[error("Failed to load Vulkan")]
-    VulkanLoad,
+pub enum VulkanErrorKind {
+    #[error("Failed to load Vulkan library")]
+    LibraryLoad,
 
     #[error("Failed to load function {name}")]
     FunctionLoadFailed { name: crate::VulkanFunctionName },
 
-    #[error("{name} failed: {code}")]
-    VulkanFunctionError {
+    #[error("{name} returned {code}")]
+    FunctionReturn {
         name: crate::VulkanFunctionName,
         code: super::ReturnCode,
     },
 }
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, VulkanError>;
 
-impl BaseError for Error {
-    type ErrorKind = ErrorKind;
+impl BaseError for VulkanError {
+    type ErrorKind = VulkanErrorKind;
 
     /// Accesses the error's kind.
     ///
@@ -71,12 +71,12 @@ impl BaseError for Error {
     }
 }
 
-impl ErrorKind {
+impl VulkanErrorKind {
     #[cfg(feature = "error_location")]
     #[inline]
     #[track_caller]
     pub(super) const fn into_result<T>(self) -> self::Result<T> {
-        Err(Error {
+        Err(VulkanError {
             kind: self,
             location: Location::caller(),
         })
@@ -98,11 +98,11 @@ impl ErrorKind {
     #[cfg(not(feature = "error_location"))]
     #[inline]
     pub(super) const fn into_result<T>(self) -> self::Result<T> {
-        Err(Error { kind: self })
+        Err(VulkanError { kind: self })
     }
 }
 
-impl From<self::Error> for CreateBackendError<self::ErrorKind> {
+impl From<self::VulkanError> for CreateBackendError<self::VulkanErrorKind> {
     /// Converts a local `Error` into a `CreateBackendError` by wrapping the error's kind in `BackendInternal` and preserving its location.
     ///
     /// # Examples
@@ -117,7 +117,7 @@ impl From<self::Error> for CreateBackendError<self::ErrorKind> {
     /// // Convert into a `CreateBackendError`.
     /// let backend_err: CreateBackendError<_> = CreateBackendError::from(err);
     /// ```
-    fn from(value: self::Error) -> Self {
+    fn from(value: self::VulkanError) -> Self {
         Self::new(BackendInternal(value.kind), value.location)
     }
 }
