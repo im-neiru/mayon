@@ -5,4 +5,4 @@ mod traits;
 pub use create_error::{CreateBackendError, CreateBackendErrorKind};
 
 pub use target_platform::{TargetPlatform, UnsupportedPlatformError};
-pub use traits::{Backend, CreateBackend};
+pub use traits::{Backend, CreateBackend, CreateContextFromRwh};
