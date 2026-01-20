@@ -94,7 +94,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
     };
 
     match Instance::<
-        VulkanBackend<'_, MynCustomAllocator>,
+        VulkanBackend<'_, DefaultLogger, MynCustomAllocator>,
         DefaultLogger,
         allocator::MynCustomAllocator,
     >::new_in::<'static>(
@@ -134,7 +134,7 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
 pub unsafe extern "C" fn mayon_drop_instance(instance: *mut MynInstance) {
     let Some(instance) = instance.as_mut().map(
         MynInstance::inner_mut::<
-            VulkanBackend<MynCustomAllocator>,
+            VulkanBackend<'_, DefaultLogger, MynCustomAllocator>,
             DefaultLogger,
             MynCustomAllocator,
         >,
