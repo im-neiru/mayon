@@ -19,7 +19,7 @@ where
     where
         H: HasDisplayHandle + HasWindowHandle,
     {
-        let fns = FnTable::global().unwrap();
+        let fns = FnTable::global()?;
 
         let (vk_instance, alloc_callbacks) = unsafe {
             let backend = instance.backend();
@@ -37,8 +37,7 @@ where
                     vk_instance,
                     &Win32SurfaceCreateInfo::from_handle(&handle),
                     alloc_callbacks,
-                )
-                .unwrap()
+                )?
             },
 
             // TODO: Add support for other platforms
