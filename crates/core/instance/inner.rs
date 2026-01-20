@@ -160,13 +160,8 @@ where
     }
 
     #[inline(always)]
-    pub fn backend_mut(&mut self) -> &mut B {
-        unsafe { &mut self.0.0.as_mut().backend }
-    }
-
-    #[inline(always)]
-    pub fn logger_mut(&mut self) -> &mut L {
-        unsafe { &mut self.0.0.as_mut().logger }
+    pub fn logger(&self) -> &L {
+        unsafe { &self.0.0.as_ref().logger }
     }
 
     #[inline(always)]
