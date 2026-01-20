@@ -174,3 +174,15 @@ where
         unsafe { &self.0.0.as_ref().allocator }
     }
 }
+
+impl<B, L, A> Clone for InstanceRef<B, L, A>
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator,
+{
+    #[inline(always)]
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
