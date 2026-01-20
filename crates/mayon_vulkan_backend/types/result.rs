@@ -1,5 +1,7 @@
 use core::mem::transmute;
 
+#[cfg(feature = "error_location")]
+use crate::VulkanFunctionName;
 use crate::{Error, ErrorKind::VulkanFunctionError, Result};
 
 #[repr(i32)]
@@ -64,7 +66,7 @@ impl VkResult {
     #[inline(always)]
     pub(crate) fn into_result<T>(
         self,
-        function_name: &'static str,
+        name: VulkanFunctionName,
         success: impl FnOnce() -> T,
     ) -> Result<T> {
         if Self::Success == self {
@@ -72,7 +74,7 @@ impl VkResult {
         } else {
             Err(Error {
                 kind: VulkanFunctionError {
-                    function_name,
+                    name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },
                 location: core::panic::Location::caller(),
@@ -84,7 +86,7 @@ impl VkResult {
     #[inline(always)]
     pub(crate) fn into_result<T>(
         self,
-        function_name: &'static str,
+        name: VulkanFunctionName,
         success: impl FnOnce() -> T,
     ) -> Result<T> {
         if Self::Success == self {
@@ -92,7 +94,7 @@ impl VkResult {
         } else {
             Err(Error {
                 kind: VulkanFunctionError {
-                    function_name,
+                    name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },
             })
