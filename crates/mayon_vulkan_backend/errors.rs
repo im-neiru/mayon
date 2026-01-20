@@ -1,6 +1,9 @@
 use core::panic::Location;
 
-use mayon_core::{BaseError, CreateBackendError, CreateBackendErrorKind::BackendInternal};
+use mayon_core::{
+    BaseError, CreateBackendError, CreateBackendErrorKind, CreateContextError,
+    CreateContextErrorKind,
+};
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
@@ -118,6 +121,18 @@ impl From<self::VulkanError> for CreateBackendError<self::VulkanErrorKind> {
     /// let backend_err: CreateBackendError<_> = CreateBackendError::from(err);
     /// ```
     fn from(value: self::VulkanError) -> Self {
-        Self::new(BackendInternal(value.kind), value.location)
+        Self::new(
+            CreateBackendErrorKind::BackendInternal(value.kind),
+            value.location,
+        )
+    }
+}
+
+impl From<VulkanError> for CreateContextError<VulkanErrorKind> {
+    fn from(value: VulkanError) -> Self {
+        CreateContextError::new(
+            CreateContextErrorKind::BackendInternal(value.kind),
+            value.location,
+        )
     }
 }
