@@ -3,7 +3,7 @@ mod create_error;
 use core::{ops, ptr::NonNull};
 
 use crate::{Backend, InstanceRef, logger::Logger};
-use allocator::Allocator;
+use allocator::{AllocError, Allocator};
 
 pub use create_error::{CreateContextError, CreateContextErrorKind};
 
@@ -22,6 +22,30 @@ where
 {
     instance: InstanceRef<B, L, A>,
     context: B::Context,
+}
+
+impl<B, L, A> Context<B, L, A>
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator,
+{
+    #[inline]
+    pub(crate) fn create(
+        instance: &InstanceRef<B, L, A>,
+        context: B::Context,
+    ) -> Result<Self, AllocError> {
+        let Ok(ptr) = (unsafe {
+            instance.allocator().allocate_init(Inner {
+                instance: instance.clone(),
+                context,
+            })
+        }) else {
+            return Err(AllocError);
+        };
+
+        Ok(Self(ptr))
+    }
 }
 
 impl<B, L, A> ops::Deref for Context<B, L, A>
