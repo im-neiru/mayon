@@ -7,7 +7,14 @@ use allocator::{AllocError, Allocator};
 
 pub use create_error::{CreateContextError, CreateContextErrorKind};
 
-pub trait ContextHandler {}
+pub trait ContextHandler<B, L, A>
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator,
+{
+    fn destroy(&self, instance: &InstanceRef<B, L, A>);
+}
 
 pub struct Context<B, L, A>(NonNull<Inner<B, L, A>>)
 where
