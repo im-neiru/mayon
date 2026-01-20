@@ -15,9 +15,12 @@ pub enum ErrorKind {
     #[error("Failed to load Vulkan")]
     VulkanLoad,
 
-    #[error("{function_name} failed: {code}")]
+    #[error("Failed to load function {name}")]
+    FunctionLoadFailed { name: crate::VulkanFunctionName },
+
+    #[error("{name} failed: {code}")]
     VulkanFunctionError {
-        function_name: &'static str,
+        name: crate::VulkanFunctionName,
         code: super::ReturnCode,
     },
 }

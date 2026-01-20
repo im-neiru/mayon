@@ -1,6 +1,6 @@
-use strum::IntoStaticStr;
+use strum::{Display, IntoStaticStr};
 
-#[derive(Copy, Clone, Debug, IntoStaticStr)]
+#[derive(Copy, Clone, Debug, IntoStaticStr, Display, PartialEq, Eq)]
 pub enum VulkanFunctionName {
     #[strum(serialize = "vkCreateInstance")]
     CreateInstance,
