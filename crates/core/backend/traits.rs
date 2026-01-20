@@ -15,7 +15,6 @@ where
     Self: Sized,
 {
     fn create_context_from_rwh<H>(
-        &self,
         instance: &mut InstanceRef<Self, L, A>,
         handle: H,
     ) -> Self::Context

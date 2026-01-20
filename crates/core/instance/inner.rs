@@ -1,5 +1,5 @@
 use core::{
-    mem::offset_of,
+    mem::{offset_of, transmute},
     ptr::NonNull,
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
@@ -184,5 +184,17 @@ where
     #[inline(always)]
     fn clone(&self) -> Self {
         Self(self.0.clone())
+    }
+}
+
+impl<B, L, A> crate::Instance<B, L, A>
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator,
+{
+    #[inline(always)]
+    pub(crate) fn create_ref(&mut self) -> &mut InstanceRef<B, L, A> {
+        unsafe { transmute::<&mut Self, &mut InstanceRef<B, L, A>>(self) }
     }
 }

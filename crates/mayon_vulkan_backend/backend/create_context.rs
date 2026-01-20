@@ -9,7 +9,6 @@ where
     A: Allocator,
 {
     fn create_context_from_rwh<H>(
-        &self,
         instance: &mut mayon_core::InstanceRef<Self, L, A>,
         handle: H,
     ) -> Self::Context

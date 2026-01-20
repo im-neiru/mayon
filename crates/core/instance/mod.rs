@@ -5,7 +5,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use allocator::{Allocator, System};
 
 use crate::{
-    Backend, BaseError, CreateBackend, CreateBackendError,
+    Backend, BaseError, Context, CreateBackend, CreateBackendError, CreateContextFromRwh,
     logger::{DefaultLogger, Logger},
 };
 
@@ -13,7 +13,7 @@ use inner::ArcInner;
 
 pub use inner::InstanceRef;
 
-pub struct Instance<B, L = DefaultLogger, A = System>(#[allow(unused)] ArcInner<B, L, A>)
+pub struct Instance<B, L = DefaultLogger, A = System>(ArcInner<B, L, A>)
 where
     B: Backend,
     L: Logger,
@@ -68,5 +68,21 @@ where
         B: CreateBackend<'s, System, L>,
     {
         Self::new_in(params, System, logger)
+    }
+}
+
+impl<B, L> Instance<B, L, System>
+where
+    B: Backend,
+    L: Logger,
+{
+    pub fn create_context_from_rwh<H>(&mut self, handle: H) -> B::Context
+    where
+        B: CreateContextFromRwh<L, System>,
+        H: HasDisplayHandle + HasWindowHandle,
+    {
+        let instance = self.create_ref();
+
+        B::create_context_from_rwh(instance, handle)
     }
 }
