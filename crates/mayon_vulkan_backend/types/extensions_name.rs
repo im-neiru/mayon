@@ -1,7 +1,10 @@
-use core::ffi::{CStr, c_char};
+use core::{
+    ffi::{CStr, c_char},
+    fmt,
+};
 
 #[repr(transparent)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub(crate) struct ExtensionName(*const c_char);
 
 impl ExtensionName {
@@ -30,5 +33,13 @@ impl ExtensionName {
     #[inline]
     pub(crate) const fn new(value: &'static CStr) -> Self {
         Self(value.as_ptr())
+    }
+}
+
+impl fmt::Debug for ExtensionName {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let c_str = unsafe { CStr::from_ptr(self.0) };
+        write!(f, "{}", c_str.to_str().unwrap())
     }
 }
