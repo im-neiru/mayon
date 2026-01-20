@@ -1,7 +1,8 @@
-use mayon::{
-    backends::vulkan::{VulkanBackend, VulkanBackendParams},
-    logger::DefaultLogger,
-};
+mod handler;
+
+use winit::event_loop::{ControlFlow::Wait, EventLoop};
+
+use mayon::{allocator::System, logger::DefaultLogger};
 
 fn main() {
     simplelog::TermLogger::init(
@@ -12,12 +13,11 @@ fn main() {
     )
     .unwrap();
 
-    let _instance = mayon::Instance::<VulkanBackend<'_, _, _>, _, _>::new::<'static>(
-        VulkanBackendParams::default()
-            .with_application_name(c"Mayon")
-            .with_engine_name(c"Mayon Engine")
-            .with_application_version((1, 0)),
-        DefaultLogger,
-    )
-    .unwrap();
+    let mut handler = handler::Handler::new(DefaultLogger, System);
+
+    let event_loop = EventLoop::new().unwrap();
+
+    event_loop.set_control_flow(Wait);
+
+    event_loop.run_app(&mut handler).unwrap();
 }
