@@ -1,20 +1,11 @@
-use allocator::Allocator;
-use mayon_core::{ContextHandler, InstanceRef, logger::Logger};
+use mayon_core::ContextHandler;
 
-use crate::VulkanBackend;
+use crate::types::Surface;
 
-pub struct VulkanContext<'a, L, A>
-where
-    L: Logger,
-    A: Allocator,
-{
-    pub(crate) instance: InstanceRef<VulkanBackend<'a, L, A>, L, A>,
+pub struct VulkanContext {
+    pub(crate) surface: Surface,
 }
 
-impl<'a, L, A> ContextHandler for VulkanContext<'a, L, A>
-where
-    L: Logger,
-    A: Allocator,
-{
+impl ContextHandler for VulkanContext {
     // TODO: implement stuff
 }
