@@ -44,6 +44,13 @@ where
             _ => return CreateContextErrorKind::UnsupportedPlatform.into_result(),
         };
 
+        mayon_core::info!(
+            instance.logger(),
+            mayon_core::logger::Target::Backend,
+            "Created surface: {:#?}",
+            surface
+        );
+
         Ok(VulkanContext { surface })
     }
 }
