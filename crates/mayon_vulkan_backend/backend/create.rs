@@ -1,5 +1,7 @@
 use core::{ffi::CStr, marker::PhantomData, ptr::NonNull};
 
+use raw_window_handle::HasDisplayHandle;
+
 use allocator::Allocator;
 use mayon_core::{
     BaseError, CreateBackend, CreateBackendError, TargetPlatform, UnsupportedPlatformError, info,
@@ -8,7 +10,7 @@ use mayon_core::{
 use utils::{BufferOverflowError, InlineVec};
 
 use crate::{
-    VulkanError, VulkanBackend,
+    VulkanBackend, VulkanError,
     backend::FnTable,
     types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
@@ -181,11 +183,15 @@ impl<'s> VulkanBackendParams<'s> {
     /// ```
     pub fn with_target_from_rwh(
         mut self,
-        display: Option<impl Into<raw_window_handle::RawDisplayHandle>>,
+        display: Option<impl HasDisplayHandle>,
         with_headless: bool,
     ) -> Result<Self, UnsupportedPlatformError> {
-        if let Some(display) = display {
-            let target = TargetPlatform::from_raw_display_handle(display.into(), with_headless)?;
+        if let Some(display) = display.as_ref() {
+            let Ok(display) = display.display_handle() else {
+                return Err(UnsupportedPlatformError);
+            };
+
+            let target = TargetPlatform::from_raw_display_handle(display.as_raw(), with_headless)?;
 
             self.target_platform = Some(target);
         } else {
