@@ -1,5 +1,4 @@
 use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
-use std::ptr::without_provenance;
 
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 #[error("Allocation Error")]
