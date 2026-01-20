@@ -23,7 +23,7 @@ where
     L: Logger,
     A: Allocator,
 {
-    type Context = crate::VulkanContext<'a, L, A>;
+    type Context = crate::VulkanContext;
 }
 
 impl<'a, L, A> Drop for VulkanBackend<'a, L, A>
