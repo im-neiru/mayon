@@ -21,13 +21,13 @@ use crate::{
 pub struct FnTable {
     library: Option<Library>,
 
-    pub fn_create_instance: unsafe extern "system" fn(
+    fn_create_instance: unsafe extern "system" fn(
         create_info: *const InstanceCreateInfo,
         allocator: AllocationCallbacksRef,
-        instance: *mut MaybeUninit<Instance>,
+        instance: *mut Instance,
     ) -> VkResult,
 
-    pub fn_destroy_instance:
+    fn_destroy_instance:
         unsafe extern "system" fn(instance: Instance, allocator: AllocationCallbacksRef),
 
     fn_create_win32_surface: Option<
@@ -63,7 +63,12 @@ impl FnTable {
             Ok(library) => Ok(Self {
                 fn_create_instance: unsafe { *library.get(CreateInstance.as_ref()).unwrap() },
                 fn_destroy_instance: unsafe { *library.get(DestroyInstance.as_ref()).unwrap() },
-                fn_create_win32_surface: None,
+                fn_create_win32_surface: unsafe {
+                    library
+                        .get(CreateWin32Surface.as_ref())
+                        .map(|ptr| *ptr)
+                        .ok()
+                },
 
                 library: Some(library),
             }),
@@ -73,41 +78,45 @@ impl FnTable {
 }
 
 impl FnTable {
+    #[inline]
+    pub(crate) unsafe fn create_instance(
+        &self,
+        create_info: &InstanceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Instance> {
+        let mut instance = MaybeUninit::<Instance>::uninit();
+
+        unsafe { (self.fn_create_instance)(create_info, allocator, instance.as_mut_ptr()) }
+            .into_result(CreateInstance, || unsafe { instance.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn destroy_instance(
+        &self,
+        instance: Instance,
+        allocator: AllocationCallbacksRef,
+    ) {
+        unsafe { (self.fn_destroy_instance)(instance, allocator) }
+    }
+
+    #[inline]
     pub(crate) unsafe fn create_win32_surface(
-        &mut self,
+        &self,
         instance: Instance,
         create_info: &Win32SurfaceCreateInfo,
         allocator: AllocationCallbacksRef,
     ) -> super::Result<Surface> {
-        let Some(library) = self.library.as_ref() else {
-            return ErrorKind::VulkanLoad.into_result();
+        let Some(fn_create_win32_surface) = self.fn_create_win32_surface else {
+            return ErrorKind::FunctionLoadFailed {
+                name: CreateWin32Surface,
+            }
+            .into_result();
         };
-
-        let is_none = self.fn_create_win32_surface.is_none();
-
-        if is_none {
-            let Ok(function) = (unsafe { library.get(CreateWin32Surface.as_ref()) }) else {
-                return ErrorKind::FunctionLoadFailed {
-                    name: CreateWin32Surface,
-                }
-                .into_result();
-            };
-
-            self.fn_create_win32_surface = Some(*function);
-        }
-
-        let fn_create_win32_surface =
-            unsafe { self.fn_create_win32_surface.as_ref().unwrap_unchecked() };
 
         let mut surface = MaybeUninit::<Surface>::uninit();
 
-        let result = unsafe {
-            (fn_create_win32_surface)(instance, create_info, allocator, surface.as_mut_ptr())
-        };
-
-        result.into_result(CreateWin32Surface.as_ref(), || unsafe {
-            surface.assume_init()
-        })
+        unsafe { (fn_create_win32_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
+            .into_result(CreateWin32Surface, || unsafe { surface.assume_init() })
     }
 }
 
