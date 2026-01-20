@@ -99,12 +99,12 @@ pub unsafe extern "C" fn mayon_new_instance_on_vulkan(
         allocator::MynCustomAllocator,
     >::new_in::<'static>(
         rust_params,
+        DefaultLogger,
         if allocator.is_null() {
             MynCustomAllocator::DEFAULT
         } else {
             *allocator
         },
-        DefaultLogger,
     ) {
         Ok(instance) => {
             out_instance.write(instance.into());
