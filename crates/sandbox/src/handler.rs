@@ -1,13 +1,14 @@
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
+    event_loop::EventLoop,
     window::{Window, WindowAttributes},
 };
 
 use mayon::{
     allocator::{Allocator, System},
-    backends::vulkan::{Instance, VulkanBackend, VulkanBackendParams, VulkanContext},
-    logger::{DefaultLogger, Logger},
+    backends::vulkan::{Context, Instance, VulkanBackendParams},
+    logger::Logger,
 };
 
 pub struct Handler<'a, L, A = System>
@@ -25,7 +26,7 @@ where
     A: Allocator,
 {
     window: Window,
-    context: VulkanContext<'a, L, A>,
+    context: Context<'a, L, A>,
 }
 
 impl<'a, L, A> Handler<'a, L, A>
@@ -33,9 +34,11 @@ where
     L: Logger,
     A: Allocator,
 {
-    pub fn new(logger: L, allocator: A) -> Self {
+    pub fn new(logger: L, allocator: A, event_loop: &EventLoop<()>) -> Self {
         let instance = Instance::<'a, L, A>::new_in(
             VulkanBackendParams::default()
+                .with_target_from_rwh(Some(event_loop), false)
+                .unwrap()
                 .with_application_name(c"Mayon")
                 .with_engine_name(c"Mayon Engine")
                 .with_application_version((1, 0)),
@@ -69,7 +72,7 @@ where
             )
             .unwrap();
 
-        let context = self.instance.create_context_from_rwh(&window);
+        let context = self.instance.create_context_from_rwh(&window).unwrap();
 
         self.window_state = Some(WindowState { window, context });
     }
@@ -80,11 +83,16 @@ where
         _: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
+        let Some(_s) = self.window_state.as_mut() else {
+            return;
+        };
+
         #[allow(clippy::single_match)]
         match event {
             winit::event::WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
+            winit::event::WindowEvent::RedrawRequested => {}
             _ => {}
         }
     }

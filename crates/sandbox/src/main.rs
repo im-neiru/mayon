@@ -13,9 +13,9 @@ fn main() {
     )
     .unwrap();
 
-    let mut handler = handler::Handler::new(DefaultLogger, System);
-
     let event_loop = EventLoop::new().unwrap();
+
+    let mut handler = handler::Handler::new(DefaultLogger, System, &event_loop);
 
     event_loop.set_control_flow(Wait);
 
