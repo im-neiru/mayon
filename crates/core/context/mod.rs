@@ -1,7 +1,11 @@
+mod create_error;
+
 use core::{ops, ptr::NonNull};
 
 use crate::{Backend, InstanceRef, logger::Logger};
 use allocator::Allocator;
+
+pub use create_error::{CreateContextError, CreateContextErrorKind};
 
 pub trait ContextHandler {}
 
@@ -31,18 +35,6 @@ where
     #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &self.0.as_ref().context }
-    }
-}
-
-impl<B, L, A> ops::DerefMut for Context<B, L, A>
-where
-    B: Backend,
-    L: Logger,
-    A: Allocator,
-{
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut self.0.as_mut().context }
     }
 }
 

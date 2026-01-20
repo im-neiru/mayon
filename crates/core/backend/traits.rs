@@ -14,10 +14,12 @@ where
     L: Logger,
     Self: Sized,
 {
+    type Error: BaseError;
+
     fn create_context_from_rwh<H>(
         instance: &mut InstanceRef<Self, L, A>,
         handle: &H,
-    ) -> Self::Context
+    ) -> Result<Self::Context, crate::CreateContextError<<Self::Error as BaseError>::ErrorKind>>
     where
         H: HasDisplayHandle + HasWindowHandle;
 }
