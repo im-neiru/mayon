@@ -39,7 +39,11 @@ pub struct FnTable {
         ) -> VkResult,
     >,
 
-    fn_destroy_surface: unsafe extern "system" fn(instance: Instance, surface: Surface),
+    fn_destroy_surface: unsafe extern "system" fn(
+        instance: Instance,
+        surface: Surface,
+        allocator: AllocationCallbacksRef,
+    ),
 }
 
 static FN_TABLE: OnceCell<FnTable> = OnceCell::new();
@@ -122,8 +126,13 @@ impl FnTable {
     }
 
     #[inline]
-    pub(crate) unsafe fn destroy_surface(&self, instance: Instance, surface: Surface) {
-        unsafe { (self.fn_destroy_surface)(instance, surface) }
+    pub(crate) unsafe fn destroy_surface(
+        &self,
+        instance: Instance,
+        surface: Surface,
+        allocator: AllocationCallbacksRef,
+    ) {
+        unsafe { (self.fn_destroy_surface)(instance, surface, allocator) }
     }
 }
 
