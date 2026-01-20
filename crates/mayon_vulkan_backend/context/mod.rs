@@ -1,5 +1,5 @@
 use allocator::Allocator;
-use mayon_core::{Context, InstanceRef, logger::Logger};
+use mayon_core::{ContextHandler, InstanceRef, logger::Logger};
 
 use crate::VulkanBackend;
 
@@ -11,7 +11,7 @@ where
     pub(crate) instance: InstanceRef<VulkanBackend<'a, L, A>, L, A>,
 }
 
-impl<'a, L, A> Context for VulkanContext<'a, L, A>
+impl<'a, L, A> ContextHandler for VulkanContext<'a, L, A>
 where
     L: Logger,
     A: Allocator,

@@ -6,6 +6,6 @@ mod instance;
 pub mod logger;
 
 pub use backend::*;
-pub use context::Context;
+pub use context::ContextHandler;
 pub use errors::BaseError;
 pub use instance::{Instance, InstanceRef};

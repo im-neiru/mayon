@@ -5,7 +5,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use allocator::{Allocator, System};
 
 use crate::{
-    Backend, BaseError, Context, CreateBackend, CreateBackendError, CreateContextFromRwh,
+    Backend, BaseError, ContextHandler, CreateBackend, CreateBackendError, CreateContextFromRwh,
     logger::{DefaultLogger, Logger},
 };
 

@@ -2,10 +2,10 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use allocator::Allocator;
 
-use crate::{BaseError, CreateBackendError, InstanceRef, context::Context, logger::Logger};
+use crate::{BaseError, CreateBackendError, InstanceRef, context::ContextHandler, logger::Logger};
 
 pub trait Backend {
-    type Context: Context;
+    type Context: ContextHandler;
 }
 
 pub trait CreateContextFromRwh<L, A>: Backend
