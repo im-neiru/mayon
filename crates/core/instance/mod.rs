@@ -5,7 +5,8 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use allocator::{Allocator, System};
 
 use crate::{
-    Backend, BaseError, ContextHandler, CreateBackend, CreateBackendError, CreateContextFromRwh,
+    Backend, BaseError, CreateBackend, CreateBackendError, CreateContextErrorKind,
+    CreateContextFromRwh,
     logger::{DefaultLogger, Logger},
 };
 
@@ -77,13 +78,26 @@ where
     L: Logger,
     A: Allocator,
 {
-    pub fn create_context_from_rwh<H>(&mut self, handle: &H) -> B::Context
+    #[allow(clippy::type_complexity)]
+    pub fn create_context_from_rwh<H>(
+        &mut self,
+        handle: &H,
+    ) -> Result<
+        crate::Context<B, L, A>,
+        crate::CreateContextError<<B::Error as BaseError>::ErrorKind>,
+    >
     where
         B: CreateContextFromRwh<L, A>,
         H: HasDisplayHandle + HasWindowHandle,
     {
         let instance = self.create_ref();
 
-        B::create_context_from_rwh(instance, handle)
+        let Ok(context) =
+            crate::Context::create(instance, B::create_context_from_rwh(instance, handle)?)
+        else {
+            return CreateContextErrorKind::AllocationFailed.into_result();
+        };
+
+        Ok(context)
     }
 }

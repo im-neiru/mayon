@@ -17,7 +17,7 @@ where
     type Error: BaseError;
 
     fn create_context_from_rwh<H>(
-        instance: &mut InstanceRef<Self, L, A>,
+        instance: &InstanceRef<Self, L, A>,
         handle: &H,
     ) -> Result<Self::Context, crate::CreateContextError<<Self::Error as BaseError>::ErrorKind>>
     where

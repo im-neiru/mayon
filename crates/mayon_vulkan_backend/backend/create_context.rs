@@ -4,7 +4,7 @@ use mayon_core::{
 };
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
-use crate::{VulkanError, VulkanContext, fn_table::FnTable, types::Win32SurfaceCreateInfo};
+use crate::{VulkanContext, VulkanError, fn_table::FnTable, types::Win32SurfaceCreateInfo};
 
 impl<L, A> CreateContextFromRwh<L, A> for crate::VulkanBackend<'_, L, A>
 where
@@ -13,7 +13,7 @@ where
 {
     type Error = VulkanError;
     fn create_context_from_rwh<H>(
-        instance: &mut mayon_core::InstanceRef<Self, L, A>,
+        instance: &mayon_core::InstanceRef<Self, L, A>,
         handle: &H,
     ) -> Result<Self::Context, CreateContextError<<Self::Error as mayon_core::BaseError>::ErrorKind>>
     where
