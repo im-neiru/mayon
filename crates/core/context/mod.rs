@@ -7,7 +7,9 @@ use allocator::{AllocError, Allocator};
 
 pub use create_error::{CreateContextError, CreateContextErrorKind};
 
-pub trait ContextHandler<B, L, A>
+pub trait ContextHandler {}
+
+pub trait DestroyContext<B, L, A>: ContextHandler
 where
     B: Backend,
     L: Logger,
@@ -19,11 +21,13 @@ where
 pub struct Context<B, L, A>(NonNull<Inner<B, L, A>>)
 where
     B: Backend,
+    B::Context: DestroyContext<B, L, A>,
     L: Logger,
     A: Allocator;
 struct Inner<B, L, A>
 where
     B: Backend,
+    B::Context: DestroyContext<B, L, A>,
     L: Logger,
     A: Allocator,
 {
@@ -34,6 +38,7 @@ where
 impl<B, L, A> Context<B, L, A>
 where
     B: Backend,
+    B::Context: DestroyContext<B, L, A>,
     L: Logger,
     A: Allocator,
 {
@@ -58,6 +63,7 @@ where
 impl<B, L, A> ops::Deref for Context<B, L, A>
 where
     B: Backend,
+    B::Context: DestroyContext<B, L, A>,
     L: Logger,
     A: Allocator,
 {
@@ -72,11 +78,15 @@ where
 impl<B, L, A> Drop for Context<B, L, A>
 where
     B: Backend,
+    B::Context: DestroyContext<B, L, A>,
     L: Logger,
     A: Allocator,
 {
     fn drop(&mut self) {
-        let allocator = unsafe { self.0.as_ref().instance.allocator() };
+        let inner = unsafe { self.0.as_mut() };
+        let allocator = inner.instance.allocator();
+
+        inner.context.destroy(&inner.instance);
 
         unsafe { allocator.deallocate_init::<Inner<B, L, A>>(self.0) }
     }

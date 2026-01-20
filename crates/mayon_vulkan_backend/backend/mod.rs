@@ -18,6 +18,22 @@ where
     _marker: std::marker::PhantomData<L>,
 }
 
+impl<'a, L, A> VulkanBackend<'a, L, A>
+where
+    L: Logger,
+    A: Allocator,
+{
+    #[inline(always)]
+    pub(crate) fn instance(&self) -> types::Instance {
+        self.instance
+    }
+
+    #[inline(always)]
+    pub(crate) unsafe fn allocator(&self) -> types::AllocationCallbacksRef<'a> {
+        unsafe { self.alloc.alloc_ref() }
+    }
+}
+
 impl<'a, L, A> mayon_core::Backend for VulkanBackend<'a, L, A>
 where
     L: Logger,

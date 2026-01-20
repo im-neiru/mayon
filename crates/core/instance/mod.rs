@@ -88,6 +88,7 @@ where
     >
     where
         B: CreateContextFromRwh<L, A>,
+        B::Context: crate::context::DestroyContext<B, L, A>,
         H: HasDisplayHandle + HasWindowHandle,
     {
         let instance = self.create_ref();
