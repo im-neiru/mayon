@@ -38,6 +38,8 @@ pub struct FnTable {
             surface: *mut Surface,
         ) -> VkResult,
     >,
+
+    fn_destroy_surface: unsafe extern "system" fn(instance: Instance, surface: Surface),
 }
 
 static FN_TABLE: OnceCell<FnTable> = OnceCell::new();
@@ -69,7 +71,7 @@ impl FnTable {
                         .map(|ptr| *ptr)
                         .ok()
                 },
-
+                fn_destroy_surface: unsafe { *library.get(DestroySurface.as_ref()).unwrap() },
                 library: Some(library),
             }),
             Err(_) => VulkanErrorKind::LibraryLoad.into_result(),
@@ -117,6 +119,11 @@ impl FnTable {
 
         unsafe { (fn_create_win32_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
             .into_result(CreateWin32Surface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn destroy_surface(&self, instance: Instance, surface: Surface) {
+        unsafe { (self.fn_destroy_surface)(instance, surface) }
     }
 }
 
