@@ -35,7 +35,7 @@ where
         let fns = FnTable::global().unwrap();
 
         unsafe {
-            (fns.fn_destroy_instance)(self.instance, self.alloc.alloc_ref());
+            fns.destroy_instance(self.instance, self.alloc.alloc_ref());
         }
     }
 }

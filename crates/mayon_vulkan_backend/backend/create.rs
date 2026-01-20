@@ -1,4 +1,4 @@
-use core::{ffi::CStr, marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
+use core::{ffi::CStr, marker::PhantomData, ptr::NonNull};
 
 use allocator::Allocator;
 use mayon_core::{
@@ -71,12 +71,7 @@ where
             NonNull::new_unchecked((allocator as *const A).cast_mut())
         });
 
-        let mut instance = MaybeUninit::uninit();
-
-        let instance = unsafe {
-            (fns.fn_create_instance)(&info, allocation_callbacks.alloc_ref(), &mut instance)
-                .into_result("vkCreateInstance", || instance.assume_init())?
-        };
+        let instance = unsafe { fns.create_instance(&info, allocation_callbacks.alloc_ref()) }?;
 
         info!(logger, LogTarget::Backend, "Vulkan instance created");
 
