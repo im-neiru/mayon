@@ -1,5 +1,7 @@
 mod inner;
 
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+
 use allocator::{Allocator, System};
 
 use crate::{
@@ -9,7 +11,8 @@ use crate::{
 
 use inner::ArcInner;
 
-#[derive(Clone)]
+pub use inner::InstanceRef;
+
 pub struct Instance<B, L = DefaultLogger, A = System>(#[allow(unused)] ArcInner<B, L, A>)
 where
     B: Backend,

@@ -82,18 +82,6 @@ where
 
         Ok(Self(buffer.cast()))
     }
-
-    // #[allow(unused)]
-    // #[inline(always)]
-    // pub(crate) fn backend(&self) -> &dyn Backend {
-    //     unsafe { self.0.as_ref().backend.assume_init_ref().deref() }
-    // }
-
-    // #[allow(unused)]
-    // #[inline(always)]
-    // pub(crate) fn backend_mut(&mut self) -> &dyn Backend {
-    //     unsafe { self.0.as_mut().backend.assume_init_mut().deref_mut() }
-    // }
 }
 
 impl<B, L, A> Clone for ArcInner<B, L, A>
@@ -152,4 +140,37 @@ where
     L: Logger,
     A: Allocator,
 {
+}
+
+pub struct InstanceRef<B, L, A>(ArcInner<B, L, A>)
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator;
+
+impl<B, L, A> InstanceRef<B, L, A>
+where
+    B: Backend,
+    L: Logger,
+    A: Allocator,
+{
+    #[inline(always)]
+    pub fn backend(&self) -> &B {
+        unsafe { &self.0.0.as_ref().backend }
+    }
+
+    #[inline(always)]
+    pub fn backend_mut(&mut self) -> &mut B {
+        unsafe { &mut self.0.0.as_mut().backend }
+    }
+
+    #[inline(always)]
+    pub fn logger_mut(&mut self) -> &mut L {
+        unsafe { &mut self.0.0.as_mut().logger }
+    }
+
+    #[inline(always)]
+    pub fn allocator(&self) -> &A {
+        unsafe { &self.0.0.as_ref().allocator }
+    }
 }
