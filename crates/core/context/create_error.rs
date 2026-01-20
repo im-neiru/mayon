@@ -41,6 +41,10 @@ where
 {
     #[error("Allocating memory for context failed")]
     AllocationFailed,
+
+    #[error("Unsupported platform")]
+    UnsupportedPlatform,
+
     #[error("{0}")]
     BackendInternal(B),
 }
