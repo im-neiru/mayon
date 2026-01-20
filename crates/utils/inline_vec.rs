@@ -1,4 +1,5 @@
 use core::{
+    fmt,
     mem::MaybeUninit,
     ops::{Index, IndexMut},
     slice,
@@ -218,6 +219,21 @@ impl<T, const CAPACITY: usize> Drop for InlineVec<T, CAPACITY> {
                 self.array.get_unchecked_mut(index).assume_init_drop();
             }
         }
+    }
+}
+
+impl<T, const CAPACITY: usize> fmt::Debug for InlineVec<T, CAPACITY>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut list = f.debug_list();
+
+        for index in 0..self.length {
+            list.entry(unsafe { self.array[index].assume_init_ref() });
+        }
+
+        list.finish()
     }
 }
 
