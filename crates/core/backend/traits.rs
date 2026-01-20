@@ -16,7 +16,7 @@ where
 {
     fn create_context_from_rwh<H>(
         instance: &mut InstanceRef<Self, L, A>,
-        handle: H,
+        handle: &H,
     ) -> Self::Context
     where
         H: HasDisplayHandle + HasWindowHandle;

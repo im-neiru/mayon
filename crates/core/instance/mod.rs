@@ -37,8 +37,8 @@ where
     /// ```
     pub fn new_in<'s>(
         params: B::Params,
-        allocator: A,
         logger: L,
+        allocator: A,
     ) -> Result<Self, CreateBackendError<<B::Error as BaseError>::ErrorKind>>
     where
         B: CreateBackend<'s, A, L>,
@@ -67,18 +67,19 @@ where
     where
         B: CreateBackend<'s, System, L>,
     {
-        Self::new_in(params, System, logger)
+        Self::new_in(params, logger, System)
     }
 }
 
-impl<B, L> Instance<B, L, System>
+impl<B, L, A> Instance<B, L, A>
 where
     B: Backend,
     L: Logger,
+    A: Allocator,
 {
-    pub fn create_context_from_rwh<H>(&mut self, handle: H) -> B::Context
+    pub fn create_context_from_rwh<H>(&mut self, handle: &H) -> B::Context
     where
-        B: CreateContextFromRwh<L, System>,
+        B: CreateContextFromRwh<L, A>,
         H: HasDisplayHandle + HasWindowHandle,
     {
         let instance = self.create_ref();
