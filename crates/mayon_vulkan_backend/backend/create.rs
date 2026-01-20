@@ -1,4 +1,4 @@
-use core::{ffi::CStr, mem::MaybeUninit, ptr::NonNull};
+use core::{ffi::CStr, marker::PhantomData, mem::MaybeUninit, ptr::NonNull};
 
 use allocator::Allocator;
 use mayon_core::{
@@ -13,10 +13,10 @@ use crate::{
     types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
 
-impl<'s, 'b, A, L> CreateBackend<'s, A, L> for VulkanBackend<'b, A>
+impl<'s, 'b, L, A> CreateBackend<'s, A, L> for VulkanBackend<'b, L, A>
 where
-    A: Allocator + 'static,
-    L: Logger + 'static,
+    L: Logger,
+    A: Allocator,
 {
     type Error = Error;
     type Params = VulkanBackendParams<'s>;
@@ -83,6 +83,7 @@ where
         Ok(Self {
             instance,
             alloc: allocation_callbacks,
+            _marker: PhantomData,
         })
     }
 }
