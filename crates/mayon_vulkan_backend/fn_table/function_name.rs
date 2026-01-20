@@ -6,7 +6,7 @@ pub enum VulkanFunctionName {
     CreateInstance,
     #[strum(serialize = "vkDestroyInstance")]
     DestroyInstance,
-    #[strum(serialize = "vkCreateWin32Surface")]
+    #[strum(serialize = "vkCreateWin32SurfaceKHR")]
     CreateWin32Surface,
 }
 
