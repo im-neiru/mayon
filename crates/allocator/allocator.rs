@@ -28,16 +28,18 @@ pub unsafe trait Allocator {
     unsafe fn allocate_init<T>(&self, value: T) -> Result<NonNull<T>, AllocError> {
         let layout = Layout::new::<T>();
 
-        if layout.size() == 0 {
-            return Ok(NonNull::dangling());
-        }
+        let ptr = if layout.size() == 0 {
+            NonNull::dangling()
+        } else {
+            let ptr: NonNull<T> = unsafe { self.allocate(layout)?.cast() };
 
-        let ptr: NonNull<T> = unsafe { self.allocate(layout)?.cast() };
+            debug_assert!(
+                ptr.addr().get().is_multiple_of(layout.align()),
+                "allocator returned misaligned pointer"
+            );
 
-        debug_assert!(
-            ptr.addr().get().is_multiple_of(layout.align()),
-            "allocator returned misaligned pointer"
-        );
+            ptr
+        };
 
         unsafe { ptr.write(value) };
 
@@ -67,13 +69,10 @@ pub unsafe trait Allocator {
     #[inline]
     unsafe fn deallocate_init<T>(&self, ptr: NonNull<T>) {
         unsafe {
-            if ptr == NonNull::<T>::dangling() {
-                return;
+            if Layout::new::<T>().size() != 0 {
+                ptr.drop_in_place();
+                self.deallocate(ptr.cast())
             }
-
-            ptr.drop_in_place();
-
-            self.deallocate(ptr.cast())
         };
     }
 }
