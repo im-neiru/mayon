@@ -67,15 +67,33 @@ impl FnTable {
     fn new() -> super::Result<Self> {
         match unsafe { loader::vulkan_lib() } {
             Ok(library) => Ok(Self {
-                fn_create_instance: unsafe { *library.get(CreateInstance.as_ref()).unwrap() },
-                fn_destroy_instance: unsafe { *library.get(DestroyInstance.as_ref()).unwrap() },
+                fn_create_instance: unsafe {
+                    *library.get(CreateInstance.as_ref()).map_err(|_| {
+                        VulkanErrorKind::FunctionLoadFailed {
+                            name: CreateInstance,
+                        }
+                    })?
+                },
+                fn_destroy_instance: unsafe {
+                    *library.get(DestroyInstance.as_ref()).map_err(|_| {
+                        VulkanErrorKind::FunctionLoadFailed {
+                            name: DestroyInstance,
+                        }
+                    })?
+                },
                 fn_create_win32_surface: unsafe {
                     library
                         .get(CreateWin32Surface.as_ref())
                         .map(|ptr| *ptr)
                         .ok()
                 },
-                fn_destroy_surface: unsafe { *library.get(DestroySurface.as_ref()).unwrap() },
+                fn_destroy_surface: unsafe {
+                    *library.get(DestroySurface.as_ref()).map_err(|_| {
+                        VulkanErrorKind::FunctionLoadFailed {
+                            name: DestroySurface,
+                        }
+                    })?
+                },
                 library: Some(library),
             }),
             Err(_) => VulkanErrorKind::LibraryLoad.into_result(),

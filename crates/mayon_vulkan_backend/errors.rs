@@ -132,7 +132,19 @@ impl From<VulkanError> for CreateContextError<VulkanErrorKind> {
     fn from(value: VulkanError) -> Self {
         CreateContextError::new(
             CreateContextErrorKind::BackendInternal(value.kind),
+            #[cfg(feature = "error_location")]
             value.location,
         )
+    }
+}
+
+impl From<VulkanErrorKind> for VulkanError {
+    #[track_caller]
+    fn from(kind: VulkanErrorKind) -> Self {
+        Self {
+            kind,
+            #[cfg(feature = "error_location")]
+            location: Location::caller(),
+        }
     }
 }
