@@ -14,7 +14,7 @@ use crate::{
     VulkanErrorKind,
     types::{
         AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
-        Win32SurfaceCreateInfo,
+        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo,
     },
 };
 
@@ -34,6 +34,15 @@ pub struct FnTable {
         unsafe extern "system" fn(
             instance: Instance,
             create_info: *const Win32SurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+
+    fn_create_wayland_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const WaylandSurfaceCreateInfo,
             allocator: AllocationCallbacksRef,
             surface: *mut Surface,
         ) -> VkResult,
@@ -84,6 +93,12 @@ impl FnTable {
                 fn_create_win32_surface: unsafe {
                     library
                         .get(CreateWin32Surface.as_ref())
+                        .map(|ptr| *ptr)
+                        .ok()
+                },
+                fn_create_wayland_surface: unsafe {
+                    library
+                        .get(CreateWaylandSurface.as_ref())
                         .map(|ptr| *ptr)
                         .ok()
                 },
@@ -141,6 +156,28 @@ impl FnTable {
 
         unsafe { (fn_create_win32_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
             .into_result(CreateWin32Surface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn create_wayland_surface(
+        &self,
+        instance: Instance,
+        create_info: &WaylandSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_wayland_surface) = self.fn_create_wayland_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateWaylandSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe {
+            (fn_create_wayland_surface)(instance, create_info, allocator, surface.as_mut_ptr())
+        }
+        .into_result(CreateWaylandSurface, || unsafe { surface.assume_init() })
     }
 
     #[inline]
