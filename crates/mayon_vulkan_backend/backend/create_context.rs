@@ -7,7 +7,10 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, Raw
 use crate::{
     VulkanContext, VulkanError,
     fn_table::FnTable,
-    types::{WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo},
+    types::{
+        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
+        XlibSurfaceCreateInfo,
+    },
 };
 
 impl<L, A> CreateContextFromRwh<L, A> for crate::VulkanBackend<'_, L, A>
@@ -60,6 +63,16 @@ where
                 fns.create_xcb_surface(
                     vk_instance,
                     &XcbSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
+                    alloc_callbacks,
+                )?
+            },
+            (
+                Ok(RawDisplayHandle::Xlib(display_handle)),
+                Ok(RawWindowHandle::Xlib(window_handle)),
+            ) => unsafe {
+                fns.create_xlib_surface(
+                    vk_instance,
+                    &XlibSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
                     alloc_callbacks,
                 )?
             },
