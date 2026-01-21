@@ -15,6 +15,7 @@ use crate::{
     types::{
         AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
         WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
+        XlibSurfaceCreateInfo,
     },
 };
 
@@ -51,6 +52,14 @@ pub struct FnTable {
         unsafe extern "system" fn(
             instance: Instance,
             create_info: *const XcbSurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+    fn_create_xlib_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const XlibSurfaceCreateInfo,
             allocator: AllocationCallbacksRef,
             surface: *mut Surface,
         ) -> VkResult,
@@ -112,6 +121,9 @@ impl FnTable {
                 },
                 fn_create_xcb_surface: unsafe {
                     library.get(CreateXcbSurface.as_ref()).map(|ptr| *ptr).ok()
+                },
+                fn_create_xlib_surface: unsafe {
+                    library.get(CreateXlibSurface.as_ref()).map(|ptr| *ptr).ok()
                 },
                 fn_destroy_surface: unsafe {
                     *library.get(DestroySurface.as_ref()).map_err(|_| {
@@ -209,6 +221,26 @@ impl FnTable {
 
         unsafe { (fn_create_xcb_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
             .into_result(CreateXcbSurface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn create_xlib_surface(
+        &self,
+        instance: Instance,
+        create_info: &XlibSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_xlib_surface) = self.fn_create_xlib_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateXlibSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe { (fn_create_xlib_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
+            .into_result(CreateXlibSurface, || unsafe { surface.assume_init() })
     }
 
     #[inline]
