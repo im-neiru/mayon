@@ -4,7 +4,14 @@ use mayon_core::{
 };
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
-use crate::{VulkanContext, VulkanError, fn_table::FnTable, types::Win32SurfaceCreateInfo};
+use crate::{
+    VulkanContext, VulkanError,
+    fn_table::FnTable,
+    types::{
+        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
+        XlibSurfaceCreateInfo,
+    },
+};
 
 impl<L, A> CreateContextFromRwh<L, A> for crate::VulkanBackend<'_, L, A>
 where
@@ -12,6 +19,7 @@ where
     A: Allocator,
 {
     type Error = VulkanError;
+
     fn create_context_from_rwh<H>(
         instance: &mayon_core::InstanceRef<Self, L, A>,
         handle: &H,
@@ -39,6 +47,36 @@ where
                     alloc_callbacks,
                 )?
             },
+            (
+                Ok(RawDisplayHandle::Wayland(display_handle)),
+                Ok(RawWindowHandle::Wayland(window_handle)),
+            ) => unsafe {
+                fns.create_wayland_surface(
+                    vk_instance,
+                    &WaylandSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
+                    alloc_callbacks,
+                )?
+            },
+            (
+                Ok(RawDisplayHandle::Xcb(display_handle)),
+                Ok(RawWindowHandle::Xcb(window_handle)),
+            ) => unsafe {
+                fns.create_xcb_surface(
+                    vk_instance,
+                    &XcbSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
+                    alloc_callbacks,
+                )?
+            },
+            (
+                Ok(RawDisplayHandle::Xlib(display_handle)),
+                Ok(RawWindowHandle::Xlib(window_handle)),
+            ) => unsafe {
+                fns.create_xlib_surface(
+                    vk_instance,
+                    &XlibSurfaceCreateInfo::try_from_handle(&display_handle, &window_handle)?,
+                    alloc_callbacks,
+                )?
+            },
 
             // TODO: Add support for other platforms
             _ => return CreateContextErrorKind::UnsupportedPlatform.into_result(),
@@ -47,7 +85,7 @@ where
         mayon_core::info!(
             instance.logger(),
             mayon_core::logger::Target::Backend,
-            "Created surface: {:#?}",
+            "Created surface: {:?}",
             surface
         );
 

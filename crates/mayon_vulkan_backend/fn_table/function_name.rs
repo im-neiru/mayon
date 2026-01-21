@@ -8,8 +8,16 @@ pub enum VulkanFunctionName {
     DestroyInstance,
     #[strum(serialize = "vkCreateWin32SurfaceKHR")]
     CreateWin32Surface,
+    #[strum(serialize = "vkCreateWaylandSurfaceKHR")]
+    CreateWaylandSurface,
+    #[strum(serialize = "vkCreateXcbSurfaceKHR")]
+    CreateXcbSurface,
+    #[strum(serialize = "vkCreateXlibSurfaceKHR")]
+    CreateXlibSurface,
     #[strum(serialize = "vkDestroySurfaceKHR")]
     DestroySurface,
+    #[strum(serialize = "vkEnumerateInstanceLayerProperties")]
+    EnumerateInstanceLayerProperties,
 }
 
 impl AsRef<str> for VulkanFunctionName {

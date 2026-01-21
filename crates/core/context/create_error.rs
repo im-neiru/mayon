@@ -45,6 +45,9 @@ where
     #[error("Unsupported platform")]
     UnsupportedPlatform,
 
+    #[error("Handle error")]
+    HandleError,
+
     #[error("{0}")]
     BackendInternal(B),
 }
