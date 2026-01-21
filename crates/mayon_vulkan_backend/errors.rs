@@ -123,6 +123,7 @@ impl From<self::VulkanError> for CreateBackendError<self::VulkanErrorKind> {
     fn from(value: self::VulkanError) -> Self {
         Self::new(
             CreateBackendErrorKind::BackendInternal(value.kind),
+            #[cfg(feature = "error_location")]
             value.location,
         )
     }
