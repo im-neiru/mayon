@@ -1,5 +1,11 @@
-use core::{ffi::c_void, marker::PhantomData, ptr::NonNull};
+use core::{
+    ffi::c_void,
+    fmt::{Debug, Display},
+    marker::PhantomData,
+    ptr::NonNull,
+};
 
+use mayon_core::{CreateContextError, CreateContextErrorKind};
 use raw_window_handle::{XlibDisplayHandle, XlibWindowHandle};
 
 use super::StructureType;
@@ -17,25 +23,25 @@ pub struct XlibSurfaceCreateInfo<'a> {
 impl XlibSurfaceCreateInfo<'_> {
     /// Creates a `XlibSurfaceCreateInfo` value from a `XlibDisplayHandle` and `XlibWindowHandle`.
     #[inline]
-    pub(crate) const fn from_handle(
+    pub(crate) const fn try_from_handle<B>(
         display_handle: &XlibDisplayHandle,
         window_handle: &XlibWindowHandle,
-    ) -> Self {
-        // SAFETY: The display handle is expected to contain a valid display pointer.
-        // We assume the caller ensures this remains valid.
-        let display = match display_handle.display {
-            Some(dpy) => dpy,
-            None => panic!("XlibDisplayHandle must contain a valid display pointer"),
+    ) -> Result<Self, CreateContextError<B>>
+    where
+        B: Copy + Clone + Debug + Display,
+    {
+        let Some(display) = display_handle.display else {
+            return CreateContextErrorKind::<B>::HandleError.into_result();
         };
 
-        Self {
+        Ok(Self {
             structure_type: StructureType::XlibSurfaceCreateInfoKhr,
             next: None,
             flags: super::XlibSurfaceCreateFlags::EMPTY,
             display,
             window: window_handle.window,
             _marker: PhantomData,
-        }
+        })
     }
 }
 
