@@ -1,7 +1,4 @@
-use core::{
-    ffi::{c_char, c_void},
-    marker::PhantomData,
-};
+use core::{ffi::c_void, marker::PhantomData};
 use std::ptr::null;
 
 use super::{ApplicationInfo, ExtensionName, LayerName, StructureType};
