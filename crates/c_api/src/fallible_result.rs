@@ -1,18 +1,19 @@
 // Octal layout for FallibleResult (u16):
 //
-// 0oE_C_SS_DDD
-// ──────────────
+// 0oE_C_SS_DD
+// ─────────────
 // E   = error flag (1 = error, 0 = success)
 // C   = class (API misuse, platform, backend, internal, etc.)
 // SS  = subsystem (e.g., 0 = generic, 00 = Vulkan, etc.)
-// DDD = detail (specific error code)
+// DD  = detail (specific error code)
 //
 // Each group is separated by underscores for readability.
 // All error codes have the highest bit set implicitly in the layout.
 
 /// Numeric result codes returned by Mayon C API functions.
 ///
-/// The value layout is implementation-defined but stable.
+/// The value layout is implementation-defined and NOT stable yet.
+/// It will change because it is in the development stage.
 /// Applications should compare against the named constants.
 #[repr(u16)]
 #[allow(clippy::unusual_byte_groupings)]
@@ -28,10 +29,11 @@ pub enum MynFallibleResult {
 
     // --- Platform General Error (class=02) ---
     /// @brief A backend failed to initialize due to a platform or loader error.
-    MAYON_RESULT_BACKEND_LOAD_ERROR = 0o1_2_00_01, // subsystem=0, detail=1
+    MAYON_RESULT_BACKEND_ALLOCATION = 0o1_2_00_01, // subsystem=0, detail=1
+    MAYON_RESULT_BACKEND_LOAD_ERROR = 0o1_2_00_02, // subsystem=0, detail=2
 
     /// @brief Unsupported target windowing platform
-    MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 0o1_2_00_02, // subsystem=0, detail=2
+    MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 0o1_2_00_03, // subsystem=0, detail=3
 
     // --- Backend Graphics API Errors (class=03) ---
     /// @brief Vulkan could not be loaded or initialized.
@@ -39,4 +41,37 @@ pub enum MynFallibleResult {
 
     /// @brief An unspecified internal error occurred.
     MAYON_RESULT_UNKNOWN_ERROR = 0o1_7_77_77, // catch-all
+}
+
+#[allow(clippy::unusual_byte_groupings)]
+impl MynFallibleResult {
+    /// Returns true if the operation succeeded.
+    #[inline]
+    pub fn is_success(self) -> bool {
+        (self as u16) & 0o1_0_00_00 == 0
+    }
+
+    /// Returns true if the operation failed.
+    #[inline]
+    pub fn is_error(self) -> bool {
+        (self as u16) & 0o1_0_00_00 != 0
+    }
+
+    /// Returns the error class (bits 12-14).
+    #[inline]
+    pub fn class(self) -> u16 {
+        (self as u16 >> 12) & 0o7
+    }
+
+    /// Returns the subsystem (bits 6-11).
+    #[inline]
+    pub fn subsystem(self) -> u16 {
+        (self as u16 >> 6) & 0o77
+    }
+
+    /// Returns the error detail (bits 0-5).
+    #[inline]
+    pub fn detail(self) -> u16 {
+        self as u16 & 0o77
+    }
 }

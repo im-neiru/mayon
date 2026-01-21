@@ -9,7 +9,8 @@
 /**
  * Numeric result codes returned by Mayon C API functions.
  *
- * The value layout is implementation-defined but stable.
+ * The value layout is implementation-defined and NOT stable yet.
+ * It will change because it is in the development stage.
  * Applications should compare against the named constants.
  */
 enum MynFallibleResult
@@ -28,11 +29,12 @@ enum MynFallibleResult
   /**
    * @brief A backend failed to initialize due to a platform or loader error.
    */
-  MAYON_RESULT_BACKEND_LOAD_ERROR = 40961,
+  MAYON_RESULT_BACKEND_ALLOCATION = 40961,
+  MAYON_RESULT_BACKEND_LOAD_ERROR = 40962,
   /**
    * @brief Unsupported target windowing platform
    */
-  MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 40962,
+  MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR = 40963,
   /**
    * @brief Vulkan could not be loaded or initialized.
    */

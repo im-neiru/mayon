@@ -1,4 +1,6 @@
-use core::{ffi::CStr, mem::MaybeUninit, ptr::NonNull};
+use core::{ffi::CStr, marker::PhantomData, ptr::NonNull};
+
+use raw_window_handle::HasDisplayHandle;
 
 use allocator::Allocator;
 use mayon_core::{
@@ -8,17 +10,17 @@ use mayon_core::{
 use utils::{BufferOverflowError, InlineVec};
 
 use crate::{
-    Error, VulkanBackend,
+    VulkanBackend, VulkanError,
     backend::FnTable,
     types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
 
-impl<'s, 'b, A, L> CreateBackend<'s, A, L> for VulkanBackend<'b, A>
+impl<'s, L, A> CreateBackend<'s, A, L> for VulkanBackend<'static, L, A>
 where
+    L: Logger,
     A: Allocator + 'static,
-    L: Logger + 'static,
 {
-    type Error = Error;
+    type Error = VulkanError;
     type Params = VulkanBackendParams<'s>;
 
     /// Creates a new Vulkan backend instance configured by `params`.
@@ -71,18 +73,14 @@ where
             NonNull::new_unchecked((allocator as *const A).cast_mut())
         });
 
-        let mut instance = MaybeUninit::uninit();
-
-        let instance = unsafe {
-            (fns.fn_create_instance)(&info, allocation_callbacks.alloc_ref(), &mut instance)
-                .into_result("vkCreateInstance", || instance.assume_init())?
-        };
+        let instance = unsafe { fns.create_instance(&info, allocation_callbacks.alloc_ref()) }?;
 
         info!(logger, LogTarget::Backend, "Vulkan instance created");
 
         Ok(Self {
             instance,
             alloc: allocation_callbacks,
+            _marker: PhantomData,
         })
     }
 }
@@ -185,11 +183,15 @@ impl<'s> VulkanBackendParams<'s> {
     /// ```
     pub fn with_target_from_rwh(
         mut self,
-        display: Option<impl Into<raw_window_handle::RawDisplayHandle>>,
+        display: Option<impl HasDisplayHandle>,
         with_headless: bool,
     ) -> Result<Self, UnsupportedPlatformError> {
-        if let Some(display) = display {
-            let target = TargetPlatform::from_raw_display_handle(display.into(), with_headless)?;
+        if let Some(display) = display.as_ref() {
+            let Ok(display) = display.display_handle() else {
+                return Err(UnsupportedPlatformError);
+            };
+
+            let target = TargetPlatform::from_raw_display_handle(display.as_raw(), with_headless)?;
 
             self.target_platform = Some(target);
         } else {

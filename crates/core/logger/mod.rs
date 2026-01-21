@@ -10,5 +10,5 @@ pub use target::Target;
 use core::fmt::Arguments;
 
 pub trait Logger {
-    fn log(&mut self, level: Level, target: Target, args: Arguments);
+    fn log(&self, level: Level, target: Target, args: Arguments);
 }

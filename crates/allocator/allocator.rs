@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, mem::MaybeUninit, ptr::NonNull};
 
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 #[error("Allocation Error")]
@@ -22,6 +22,68 @@ pub unsafe trait Allocator {
     #[inline]
     unsafe fn shrink(&self, ptr: NonNull<u8>, new_layout: Layout) -> AllocResult {
         unsafe { self.reallocate(ptr, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn allocate_init<T>(&self, value: T) -> Result<NonNull<T>, AllocError> {
+        let layout = Layout::new::<T>();
+
+        let ptr = if layout.size() == 0 {
+            NonNull::dangling()
+        } else {
+            let ptr: NonNull<T> = unsafe { self.allocate(layout)?.cast() };
+
+            debug_assert!(
+                ptr.addr().get().is_multiple_of(layout.align()),
+                "allocator returned misaligned pointer"
+            );
+
+            ptr
+        };
+
+        unsafe { ptr.write(value) };
+
+        Ok(ptr)
+    }
+
+    #[inline]
+    unsafe fn allocate_uninit<T>(&self) -> Result<NonNull<MaybeUninit<T>>, AllocError> {
+        let layout = Layout::new::<T>();
+
+        if layout.size() == 0 {
+            return Ok(NonNull::dangling());
+        }
+
+        debug_assert_eq!(layout, Layout::new::<MaybeUninit<T>>());
+
+        let ptr = unsafe { self.allocate(layout) }?;
+
+        debug_assert!(
+            ptr.addr().get().is_multiple_of(layout.align()),
+            "allocator returned misaligned pointer"
+        );
+
+        Ok(ptr.cast())
+    }
+
+    #[inline]
+    unsafe fn deallocate_init<T>(&self, ptr: NonNull<T>) {
+        unsafe {
+            let layout = Layout::new::<T>();
+            if layout.size() == 0 {
+                // ZSTs are valid at dangling pointers (aligned), so we must drop them.
+                // We do not deallocate since we didn't allocate.
+                ptr.drop_in_place();
+                return;
+            }
+
+            if ptr == NonNull::<T>::dangling() {
+                return;
+            }
+
+            ptr.drop_in_place();
+            self.deallocate(ptr.cast())
+        };
     }
 }
 
@@ -144,6 +206,86 @@ mod tests {
 
                 system.deallocate(shrunk_ptr);
             }
+        }
+    }
+    #[test]
+    fn test_allocate_init_zero() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+        struct DropCheck;
+
+        impl Drop for DropCheck {
+            fn drop(&mut self) {
+                DROP_COUNT.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+
+        unsafe {
+            let system = crate::System;
+
+            DROP_COUNT.store(0, Ordering::SeqCst);
+            let ptr = system
+                .allocate_init(DropCheck)
+                .expect("allocate_init failed");
+            assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0, "Dropped too early");
+
+            system.deallocate_init(ptr);
+            assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1, "Did not drop");
+
+            DROP_COUNT.store(0, Ordering::SeqCst);
+            let mut ptr_uninit = system
+                .allocate_uninit::<DropCheck>()
+                .expect("allocate_uninit failed");
+
+            ptr_uninit.as_mut().write(DropCheck);
+
+            let ptr_init = ptr_uninit.cast::<DropCheck>();
+            assert_eq!(
+                DROP_COUNT.load(Ordering::SeqCst),
+                0,
+                "Dropped too early (uninit)"
+            );
+
+            system.deallocate_init(ptr_init);
+            assert_eq!(
+                DROP_COUNT.load(Ordering::SeqCst),
+                1,
+                "Did not drop (uninit)"
+            );
+        }
+    }
+
+    #[test]
+    fn test_allocate_init_sized() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+        struct DropCheckSized(#[allow(dead_code)] u32);
+
+        impl Drop for DropCheckSized {
+            fn drop(&mut self) {
+                DROP_COUNT.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+
+        unsafe {
+            let system = crate::System;
+
+            DROP_COUNT.store(0, Ordering::SeqCst);
+            let ptr = system
+                .allocate_init(DropCheckSized(42))
+                .expect("allocate_init failed");
+
+            assert_ne!(
+                ptr,
+                NonNull::dangling(),
+                "Sized type should allocate memory"
+            );
+            assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0, "Dropped too early");
+
+            system.deallocate_init(ptr);
+            assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 1, "Did not drop");
         }
     }
 }

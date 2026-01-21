@@ -21,7 +21,7 @@ impl Logger for DefaultLogger {
     ///
     #[inline]
     #[track_caller]
-    fn log(&mut self, level: Level, target: Target, args: Arguments) {
+    fn log(&self, level: Level, target: Target, args: Arguments) {
         let level = match level {
             Level::Error => log::Level::Error,
             Level::Warn => log::Level::Warn,
@@ -56,7 +56,7 @@ impl Logger for QuietLogger {
     /// logger.log(Level::Info, Target::Backend, format_args!("initialized: {}", true));
     ///
     #[inline(always)]
-    fn log(&mut self, _: Level, _: Target, _: Arguments) {
+    fn log(&self, _: Level, _: Target, _: Arguments) {
         /* Be quiet */
     }
 }

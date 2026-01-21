@@ -5,25 +5,25 @@ use core::{
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 #[error("{kind}")]
-pub struct CreateBackendError<B>
+pub struct CreateContextError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    pub(crate) kind: CreateBackendErrorKind<B>,
+    pub(crate) kind: CreateContextErrorKind<B>,
     #[cfg(feature = "error_location")]
     pub(crate) location: &'static Location<'static>,
 }
 
-impl<B> CreateBackendError<B>
+impl<B> CreateContextError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    /// Creates a new `CreateBackendError` with the given error kind.
+    /// Creates a new `CreateContextError` with the given error kind.
     ///
     /// The `location` argument is included only when the `error_location` feature is enabled
     /// and captures the caller location for diagnostic purposes.
     pub const fn new(
-        kind: CreateBackendErrorKind<B>,
+        kind: CreateContextErrorKind<B>,
         #[cfg(feature = "error_location")] location: &'static Location<'static>,
     ) -> Self {
         Self {
@@ -35,23 +35,25 @@ where
 }
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
-pub enum CreateBackendErrorKind<B>
+pub enum CreateContextErrorKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    #[error("Unsupported Target Window Platform")]
-    UnsupportedTargetPlatform,
-    #[error("Allocating memory for Instance failed")]
+    #[error("Allocating memory for context failed")]
     AllocationFailed,
+
+    #[error("Unsupported platform")]
+    UnsupportedPlatform,
+
     #[error("{0}")]
     BackendInternal(B),
 }
 
-impl<B> crate::BaseError for CreateBackendError<B>
+impl<B> crate::BaseError for CreateContextError<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    type ErrorKind = CreateBackendErrorKind<B>;
+    type ErrorKind = CreateContextErrorKind<B>;
 
     /// Returns the error's kind.
     fn kind(&self) -> Self::ErrorKind {
@@ -66,36 +68,36 @@ where
     }
 }
 
-impl<B> CreateBackendErrorKind<B>
+impl<B> CreateContextErrorKind<B>
 where
     B: Copy + Clone + Debug + Display,
 {
-    /// Convert this `BackendCreateKind` into an error `Result`, producing a
-    /// `CreateBackendError` that captures the caller's source location.
+    /// Convert this `CreateContextErrorKind` into an error `Result`, producing a
+    /// `CreateContextError` that captures the caller's source location.
     ///
     /// # Returns
     ///
-    /// `Err(CreateBackendError)` containing this kind and the call-site `Location`.
+    /// `Err(CreateContextError)` containing this kind and the call-site `Location`.
     #[cfg(feature = "error_location")]
     #[inline]
     #[track_caller]
-    pub const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
-        Err(CreateBackendError {
+    pub const fn into_result<T>(self) -> Result<T, self::CreateContextError<B>> {
+        Err(CreateContextError {
             kind: self,
             location: Location::caller(),
         })
     }
 
-    /// Converts this `BackendCreateKind` into an `Err` value containing a `CreateBackendError`.
+    /// Converts this `CreateContextErrorKind` into an `Err` value containing a `CreateContextError`.
     ///
     /// This version is used when the `error_location` feature is disabled and therefore does not attach a call-site location to the error.
     ///
     /// # Returns
     ///
-    /// `Err(CreateBackendError)` with `kind` set to `self`.
+    /// `Err(CreateContextError)` with `kind` set to `self`.
     #[cfg(not(feature = "error_location"))]
     #[inline]
-    pub const fn into_result<T>(self) -> Result<T, self::CreateBackendError<B>> {
-        Err(CreateBackendError { kind: self })
+    pub const fn into_result<T>(self) -> Result<T, self::CreateContextError<B>> {
+        Err(CreateContextError { kind: self })
     }
 }

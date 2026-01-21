@@ -1,6 +1,7 @@
 use core::mem::transmute;
 
-use crate::{Error, ErrorKind::VulkanFunctionError, Result};
+use crate::VulkanFunctionName;
+use crate::{Result, VulkanError, VulkanErrorKind::FunctionReturn};
 
 #[repr(i32)]
 #[allow(unused)]
@@ -64,15 +65,15 @@ impl VkResult {
     #[inline(always)]
     pub(crate) fn into_result<T>(
         self,
-        function_name: &'static str,
+        name: VulkanFunctionName,
         success: impl FnOnce() -> T,
     ) -> Result<T> {
         if Self::Success == self {
             Ok(success())
         } else {
-            Err(Error {
-                kind: VulkanFunctionError {
-                    function_name,
+            Err(VulkanError {
+                kind: FunctionReturn {
+                    name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },
                 location: core::panic::Location::caller(),
@@ -84,15 +85,15 @@ impl VkResult {
     #[inline(always)]
     pub(crate) fn into_result<T>(
         self,
-        function_name: &'static str,
+        name: VulkanFunctionName,
         success: impl FnOnce() -> T,
     ) -> Result<T> {
         if Self::Success == self {
             Ok(success())
         } else {
-            Err(Error {
-                kind: VulkanFunctionError {
-                    function_name,
+            Err(VulkanError {
+                kind: FunctionReturn {
+                    name,
                     code: unsafe { transmute::<Self, ReturnCode>(self) },
                 },
             })

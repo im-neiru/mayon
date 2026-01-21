@@ -6,4 +6,6 @@ edition = "2024"
 [dependencies]
 simplelog = "0.12.2"
 
-mayon = { path = "../mayon" }
+winit.workspace = true
+
+mayon = { path = "../mayon", features = ["allocator"] }

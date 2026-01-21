@@ -6,8 +6,7 @@ use core::{
 use std::ptr::null;
 
 use mayon::{
-    BackendCreateKind, BaseError, CreateBackendError,
-    backends::vulkan::ErrorKind as VulkanErrorKind,
+    BaseError, CreateBackendError, CreateBackendErrorKind, backends::vulkan::VulkanErrorKind,
 };
 
 use crate::fallible_result::MynFallibleResult;
@@ -21,6 +20,7 @@ pub(crate) enum Error {
     NullArg {
         name: &'static CStr,
     },
+    InstanceAllocation,
     UnsupportedTargetPlatform,
     FailedBackendLoad {
         name: &'static CStr,
@@ -67,26 +67,36 @@ pub(crate) fn set_null_pointer_arg(name: &'static CStr) -> MynFallibleResult {
 #[inline]
 pub(crate) fn set_vulkan_error(error: CreateBackendError<VulkanErrorKind>) -> MynFallibleResult {
     match error.kind() {
-        BackendCreateKind::UnsupportedTargetPlatform => {
+        CreateBackendErrorKind::UnsupportedTargetPlatform => {
             LAST_ERROR.set(Some(Error::UnsupportedTargetPlatform));
 
             MynFallibleResult::MAYON_RESULT_UNSUPPORTED_PLATFORM_ERROR
         }
-        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanLoad) => {
+        CreateBackendErrorKind::BackendInternal(VulkanErrorKind::LibraryLoad) => {
             LAST_ERROR.set(Some(Error::FailedBackendLoad { name: c"Vulkan" }));
 
             MynFallibleResult::MAYON_RESULT_BACKEND_LOAD_ERROR
         }
-        BackendCreateKind::BackendInternal(VulkanErrorKind::VulkanFunctionError {
-            function_name,
-            code,
-        }) => {
+        CreateBackendErrorKind::BackendInternal(VulkanErrorKind::FunctionLoadFailed { name }) => {
             LAST_ERROR.set(Some(Error::VulkanFunction {
-                function_name,
+                function_name: name.into(),
+                return_code: 0,
+            }));
+
+            MynFallibleResult::MAYON_RESULT_VULKAN_LOAD_ERROR
+        }
+        CreateBackendErrorKind::BackendInternal(VulkanErrorKind::FunctionReturn { name, code }) => {
+            LAST_ERROR.set(Some(Error::VulkanFunction {
+                function_name: name.into(),
                 return_code: code as i32,
             }));
 
             MynFallibleResult::MAYON_RESULT_VULKAN_LOAD_ERROR
+        }
+        CreateBackendErrorKind::AllocationFailed => {
+            LAST_ERROR.set(Some(Error::InstanceAllocation));
+
+            MynFallibleResult::MAYON_RESULT_BACKEND_ALLOCATION
         }
     }
 }
@@ -110,6 +120,7 @@ pub(crate) fn get_message() -> *const c_char {
 
         match err {
             Error::NullArg { name } => store_message(format!("Null pointer argument: {:?}", name)),
+            Error::InstanceAllocation => store_message("Instance allocation failed".to_string()),
             Error::UnsupportedTargetPlatform => {
                 store_message("UnsupportedPlatformError".to_string())
             }

@@ -1,13 +1,33 @@
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+
 use allocator::Allocator;
 
-use crate::{BaseError, CreateBackendError, logger::Logger};
+use crate::{BaseError, CreateBackendError, InstanceRef, context::ContextHandler, logger::Logger};
 
-pub trait Backend {}
+pub trait Backend {
+    type Context: ContextHandler;
+}
+
+pub trait CreateContextFromRwh<L, A>: Backend
+where
+    A: Allocator,
+    L: Logger,
+    Self: Sized,
+{
+    type Error: BaseError;
+
+    fn create_context_from_rwh<H>(
+        instance: &InstanceRef<Self, L, A>,
+        handle: &H,
+    ) -> Result<Self::Context, crate::CreateContextError<<Self::Error as BaseError>::ErrorKind>>
+    where
+        H: HasDisplayHandle + HasWindowHandle;
+}
 
 pub trait CreateBackend<'s, A, L>
 where
-    A: Allocator + 'static,
-    L: Logger + 'static,
+    A: Allocator,
+    L: Logger,
     Self::Error: BaseError,
     Self: Backend,
 {
