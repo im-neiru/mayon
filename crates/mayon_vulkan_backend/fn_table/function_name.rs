@@ -10,6 +10,8 @@ pub enum VulkanFunctionName {
     CreateWin32Surface,
     #[strum(serialize = "vkCreateWaylandSurfaceKHR")]
     CreateWaylandSurface,
+    #[strum(serialize = "vkCreateXcbSurfaceKHR")]
+    CreateXcbSurface,
     #[strum(serialize = "vkDestroySurfaceKHR")]
     DestroySurface,
 }
