@@ -99,7 +99,12 @@ where
 
         let instance = unsafe { fns.create_instance(&info, allocation_callbacks.alloc_ref()) }?;
 
-        info!(logger, LogTarget::Backend, "Vulkan instance created");
+        info!(
+            logger,
+            LogTarget::Backend,
+            "Vulkan instance created: {:?}",
+            instance
+        );
 
         Ok(Self {
             instance,
