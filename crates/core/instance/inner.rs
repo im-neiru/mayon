@@ -23,6 +23,7 @@ where
     ref_count: AtomicUsize,
 }
 
+#[repr(transparent)]
 pub(crate) struct ArcInner<B, L, A>(NonNull<Inner<B, L, A>>)
 where
     B: Backend,
@@ -142,6 +143,7 @@ where
 {
 }
 
+#[repr(transparent)]
 pub struct InstanceRef<B, L, A>(ArcInner<B, L, A>)
 where
     B: Backend,
