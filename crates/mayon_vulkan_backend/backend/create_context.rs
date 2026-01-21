@@ -4,7 +4,11 @@ use mayon_core::{
 };
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
-use crate::{VulkanContext, VulkanError, fn_table::FnTable, types::Win32SurfaceCreateInfo};
+use crate::{
+    VulkanContext, VulkanError,
+    fn_table::FnTable,
+    types::{WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo},
+};
 
 impl<L, A> CreateContextFromRwh<L, A> for crate::VulkanBackend<'_, L, A>
 where
@@ -36,6 +40,16 @@ where
                 fns.create_win32_surface(
                     vk_instance,
                     &Win32SurfaceCreateInfo::from_handle(&handle),
+                    alloc_callbacks,
+                )?
+            },
+            (
+                Ok(RawDisplayHandle::Wayland(display_handle)),
+                Ok(RawWindowHandle::Wayland(window_handle)),
+            ) => unsafe {
+                fns.create_wayland_surface(
+                    vk_instance,
+                    &WaylandSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
                     alloc_callbacks,
                 )?
             },
