@@ -14,7 +14,7 @@ use crate::{
     VulkanErrorKind,
     types::{
         AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
-        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo,
+        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
     },
 };
 
@@ -43,6 +43,14 @@ pub struct FnTable {
         unsafe extern "system" fn(
             instance: Instance,
             create_info: *const WaylandSurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+    fn_create_xcb_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const XcbSurfaceCreateInfo,
             allocator: AllocationCallbacksRef,
             surface: *mut Surface,
         ) -> VkResult,
@@ -101,6 +109,9 @@ impl FnTable {
                         .get(CreateWaylandSurface.as_ref())
                         .map(|ptr| *ptr)
                         .ok()
+                },
+                fn_create_xcb_surface: unsafe {
+                    library.get(CreateXcbSurface.as_ref()).map(|ptr| *ptr).ok()
                 },
                 fn_destroy_surface: unsafe {
                     *library.get(DestroySurface.as_ref()).map_err(|_| {
@@ -178,6 +189,26 @@ impl FnTable {
             (fn_create_wayland_surface)(instance, create_info, allocator, surface.as_mut_ptr())
         }
         .into_result(CreateWaylandSurface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn create_xcb_surface(
+        &self,
+        instance: Instance,
+        create_info: &XcbSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_xcb_surface) = self.fn_create_xcb_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateXcbSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe { (fn_create_xcb_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
+            .into_result(CreateXcbSurface, || unsafe { surface.assume_init() })
     }
 
     #[inline]
