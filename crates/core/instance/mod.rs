@@ -14,6 +14,20 @@ use inner::ArcInner;
 
 pub use inner::InstanceRef;
 
+/// A Mayon instance, representing an initialized graphics backend.
+///
+/// The `Instance` is the primary entry point for the Mayon library. It maintains the lifetime
+/// of the chosen graphics backend (e.g., Vulkan, DirectX) and provides methods to create
+/// surfaces and rendering contexts.
+///
+/// It is internally reference-counted, making it cheap to clone, though clones still point
+/// to the same underlying backend instance.
+///
+/// # Type Parameters
+///
+/// * `B`: The backend implementation (must implement [`Backend`]).
+/// * `L`: The logger implementation for diagnostic output. Defaults to [`DefaultLogger`].
+/// * `A`: The allocator used for internal memory management. Defaults to [`System`].
 #[repr(transparent)]
 pub struct Instance<B, L = DefaultLogger, A = System>(#[allow(unused)] ArcInner<B, L, A>)
 where
@@ -27,16 +41,20 @@ where
     L: Logger,
     A: Allocator,
 {
-    /// Creates an `Instance` by constructing backend `B` with the provided parameters, allocator, and logger.
+    /// Creates a new `Instance` with a specific allocator and logger.
+    ///
+    /// This is the most flexible way to create an instance, allowing full control over
+    /// memory allocation and logging.
     ///
     /// # Parameters
-    /// - `params`: Backend-specific creation parameters.
-    /// - `allocator`: Allocator to use for the instance.
-    /// - `logger`: Logger to attach to the backend.
     ///
-    /// # Returns
-    /// `Ok(Self)` containing the created instance, or `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` if backend creation fails.
-    /// ```
+    /// * `params`: Backend-specific creation parameters.
+    /// * `logger`: The logger to be used by the instance and all objects created from it.
+    /// * `allocator`: The allocator to be used for all internal allocations.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CreateBackendError`] if the backend initialization fails.
     pub fn new_in<'s>(
         params: B::Params,
         logger: L,
@@ -56,11 +74,18 @@ where
     B: Backend,
     L: Logger,
 {
-    /// Creates a new Instance using the global allocator for backend `B`.
+    /// Creates a new `Instance` using the default system allocator.
     ///
-    /// # Returns
+    /// This is a convenience method for cases where custom allocation is not required.
     ///
-    /// `Ok(Self)` if backend creation succeeds, `Err(CreateBackendError<<B::Error as BaseError>::ErrorKind>)` otherwise.
+    /// # Parameters
+    ///
+    /// * `params`: Backend-specific creation parameters.
+    /// * `logger`: The logger to be used by the instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CreateBackendError`] if the backend initialization fails.
     #[inline]
     pub fn new<'s>(
         params: B::Params,
@@ -79,6 +104,18 @@ where
     L: Logger,
     A: Allocator,
 {
+    /// Creates a new [`Context`](crate::Context) from raw window handles.
+    ///
+    /// This method allows Mayon to interface with externally created windows (e.g., from `winit`).
+    ///
+    /// # Parameters
+    ///
+    /// * `handle`: An object implementing both [`HasDisplayHandle`] and [`HasWindowHandle`].
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CreateContextError`](crate::CreateContextError) if the context could not be created.
+    /// This can happen due to incompatible window handles, device loss, or allocation failures.
     #[allow(clippy::type_complexity)]
     pub fn create_context_from_rwh<H>(
         &mut self,

@@ -143,6 +143,13 @@ where
 {
 }
 
+/// A shared reference to a Mayon [`Instance`].
+///
+/// `InstanceRef` provides read-only access to the underlying backend, logger, and allocator
+/// of a Mayon instance. It is often passed to backend-specific functions that require
+/// access to the global state.
+///
+/// Like [`Instance`], it is internally reference-counted and cheap to clone.
 #[repr(transparent)]
 pub struct InstanceRef<B, L, A>(ArcInner<B, L, A>)
 where
@@ -156,16 +163,19 @@ where
     L: Logger,
     A: Allocator,
 {
+    /// Returns a reference to the graphics backend.
     #[inline(always)]
     pub fn backend(&self) -> &B {
         unsafe { &self.0.0.as_ref().backend }
     }
 
+    /// Returns a reference to the logger associated with this instance.
     #[inline(always)]
     pub fn logger(&self) -> &L {
         unsafe { &self.0.0.as_ref().logger }
     }
 
+    /// Returns a reference to the allocator used by this instance.
     #[inline(always)]
     pub fn allocator(&self) -> &A {
         unsafe { &self.0.0.as_ref().allocator }
