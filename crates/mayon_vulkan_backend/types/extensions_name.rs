@@ -40,6 +40,6 @@ impl fmt::Debug for ExtensionName {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let c_str = unsafe { CStr::from_ptr(self.0) };
-        write!(f, "{}", c_str.to_str().unwrap())
+        write!(f, "{}", c_str.to_string_lossy())
     }
 }
