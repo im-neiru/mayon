@@ -129,7 +129,7 @@ where
         B::Context: crate::context::DestroyContext<B, L, A>,
         H: HasDisplayHandle + HasWindowHandle,
     {
-        let instance = self.create_ref();
+        let instance = unsafe { self.create_ref() };
 
         let Ok(context) =
             crate::Context::create(instance, B::create_context_from_rwh(instance, handle)?)

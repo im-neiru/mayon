@@ -200,8 +200,15 @@ where
     L: Logger,
     A: Allocator,
 {
+    /// Creates a new [`InstanceRef`] from a mutable reference to this instance.
+    /// This is unsafe and should only be use internaly.
+    /// Currently this is use to expose backend, logger and allocator to the Context implementors.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the instance is not dropped while the returned reference is still in use.
     #[inline(always)]
-    pub(crate) fn create_ref(&mut self) -> &mut InstanceRef<B, L, A> {
+    pub(crate) unsafe fn create_ref(&mut self) -> &mut InstanceRef<B, L, A> {
         unsafe { transmute::<&mut Self, &mut InstanceRef<B, L, A>>(self) }
     }
 }
