@@ -88,8 +88,6 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     #[inline]
     pub fn push(&mut self, value: T) -> Result<(), crate::BufferOverflowError> {
         if self.length == CAPACITY {
-            drop(value);
-
             return Err(crate::BufferOverflowError);
         }
 
