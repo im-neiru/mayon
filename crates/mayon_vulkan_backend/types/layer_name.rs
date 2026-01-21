@@ -28,12 +28,12 @@ impl fmt::Debug for LayerName {
 impl PartialEq for LayerName {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        let mut left = self.0.as_ptr();
-        let mut right = other.0.as_ptr();
+        let mut left = self.0.as_ptr().cast_const();
+        let mut right = other.0.as_ptr().cast_const();
 
         // Skip pointer optimization in tests to force manual string comparison.
         #[cfg(not(test))]
-        if left == right {
+        if core::ptr::eq(left, right) {
             return true;
         }
 
@@ -50,6 +50,36 @@ impl PartialEq for LayerName {
                 left = left.add(1);
                 right = right.add(1);
             }
+        }
+    }
+}
+
+impl<const SIZE: usize> PartialEq<[c_char; SIZE]> for LayerName {
+    fn eq(&self, other: &[c_char; SIZE]) -> bool {
+        let mut left = self.0.as_ptr().cast_const();
+        let mut right = other.as_ptr();
+
+        // Skip pointer optimization in tests to force manual string comparison.
+        #[cfg(not(test))]
+        if core::ptr::eq(left, right) {
+            return true;
+        }
+
+        unsafe {
+            for _ in 0..SIZE {
+                if left.read() == 0 {
+                    return true;
+                }
+
+                if left.read() != right.read() {
+                    return false;
+                }
+
+                left = left.add(1);
+                right = right.add(1);
+            }
+
+            left.read() == 0
         }
     }
 }
