@@ -1,6 +1,6 @@
 use core::{
     mem::{offset_of, transmute},
-    ptr::NonNull,
+    ptr::{NonNull, drop_in_place},
     sync::atomic::{AtomicUsize, Ordering, fence},
 };
 
@@ -51,37 +51,50 @@ where
     where
         B: CreateBackend<'s, A, L>,
     {
-        let Ok(mut buffer) = (unsafe { allocator.allocate_uninit::<Inner<B, L, A>>() }) else {
+        let Ok(buffer) = (unsafe { allocator.allocate_uninit::<Inner<B, L, A>>() }) else {
             return CreateBackendErrorKind::AllocationFailed.into_result();
         };
 
         unsafe {
-            buffer
+            let allocator_ptr = buffer
                 .byte_add(offset_of!(Inner<B, L, A>, allocator))
-                .cast()
-                .write(allocator);
+                .cast::<A>();
 
-            buffer
+            let logger_ptr = buffer
                 .byte_add(offset_of!(Inner<B, L, A>, logger))
-                .cast()
-                .write(logger);
+                .cast::<L>();
 
-            buffer
+            let ref_count_ptr = buffer
                 .byte_add(offset_of!(Inner<B, L, A>, ref_count))
-                .cast()
-                .write(AtomicUsize::new(1));
+                .cast::<AtomicUsize>();
 
-            buffer
+            let backend_ptr = buffer
                 .byte_add(offset_of!(Inner<B, L, A>, backend))
-                .cast()
-                .write(B::create(
-                    &buffer.as_ref().assume_init_ref().allocator,
-                    &mut buffer.as_mut().assume_init_mut().logger,
-                    params,
-                )?);
-        }
+                .cast::<B>();
 
-        Ok(Self(buffer.cast()))
+            allocator_ptr.as_ptr().write(allocator);
+            logger_ptr.as_ptr().write(logger);
+            ref_count_ptr.as_ptr().write(AtomicUsize::new(1));
+
+            let backend =
+                match B::create(&*allocator_ptr.as_ptr(), &mut *logger_ptr.as_ptr(), params) {
+                    Ok(backend) => backend,
+                    Err(err) => {
+                        // Cleanup partially initialized buffer
+                        let allocator = allocator_ptr.as_ptr().read();
+                        drop_in_place(logger_ptr.as_ptr());
+                        drop_in_place(ref_count_ptr.as_ptr());
+
+                        allocator.deallocate(buffer.cast());
+
+                        return Err(err);
+                    }
+                };
+
+            backend_ptr.as_ptr().write(backend);
+
+            Ok(Self(buffer.cast()))
+        }
     }
 }
 
