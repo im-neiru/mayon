@@ -12,7 +12,10 @@ use utils::{BufferOverflowError, InlineVec};
 use crate::{
     VulkanBackend, VulkanError,
     backend::FnTable,
-    types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
+    types::{
+        AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo, LayerName,
+        LayerProperties,
+    },
 };
 
 impl<'s, L, A> CreateBackend<'s, A, L> for VulkanBackend<'static, L, A>
@@ -59,7 +62,27 @@ where
         let fns = FnTable::global()?;
 
         let application_info = ApplicationInfo::new(params);
-        let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
+
+        #[cfg(debug_assertions)]
+        let layers = {
+            let layers = select_available_layers(fns, [LayerName::VALIDATION])?;
+
+            if layers.is_empty() {
+                info!(logger, LogTarget::Backend, "Vulkan layers not found");
+            } else {
+                info!(
+                    logger,
+                    LogTarget::Backend,
+                    "Vulkan layers found: {:?}",
+                    layers
+                );
+            }
+
+            layers
+        };
+        #[cfg(not(debug_assertions))]
+        let layers = [];
+
         let mut extensions = InlineVec::<ExtensionName, 12>::new();
 
         if let Some(target_platform) = params.target_platform {
@@ -67,7 +90,8 @@ where
                 .expect("Vulkan extension name buffer overflow");
         }
 
-        let info = InstanceCreateInfo::new(&application_info, &layers, extensions.as_slice());
+        let info =
+            InstanceCreateInfo::new(&application_info, layers.as_slice(), extensions.as_slice());
 
         let allocation_callbacks = AllocationCallbacks::new(unsafe {
             NonNull::new_unchecked((allocator as *const A).cast_mut())
@@ -75,7 +99,12 @@ where
 
         let instance = unsafe { fns.create_instance(&info, allocation_callbacks.alloc_ref()) }?;
 
-        info!(logger, LogTarget::Backend, "Vulkan instance created");
+        info!(
+            logger,
+            LogTarget::Backend,
+            "Vulkan instance created: {:?}",
+            instance
+        );
 
         Ok(Self {
             instance,
@@ -323,4 +352,32 @@ fn append_extension_names<const CAPACITY: usize>(
     }
 
     Ok(())
+}
+
+fn select_available_layers<const N: usize>(
+    fns: &FnTable,
+    requested_layers: [LayerName; N],
+) -> Result<InlineVec<LayerName, N>, VulkanError> {
+    const CHUNK_SIZE: usize = 64;
+    let mut available_layers = InlineVec::<LayerName, N>::new();
+    let mut buf_props = LayerProperties::zeroized::<CHUNK_SIZE>();
+
+    let mut count = CHUNK_SIZE as u32;
+
+    unsafe {
+        fns.enumerate_instance_layer_properties(&mut count, buf_props.as_mut_ptr())?;
+    }
+
+    let actual_count = (count as usize).min(CHUNK_SIZE);
+
+    for property in &buf_props[..actual_count] {
+        for &requested in &requested_layers {
+            if requested == property.layer_name {
+                let _ = available_layers.push(requested);
+                break;
+            }
+        }
+    }
+
+    Ok(available_layers)
 }

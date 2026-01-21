@@ -13,8 +13,9 @@ use VulkanFunctionName::*;
 use crate::{
     VulkanErrorKind,
     types::{
-        AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
-        Win32SurfaceCreateInfo,
+        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, Surface, VkResult,
+        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
+        XlibSurfaceCreateInfo,
     },
 };
 
@@ -39,11 +40,40 @@ pub struct FnTable {
         ) -> VkResult,
     >,
 
+    fn_create_wayland_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const WaylandSurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+    fn_create_xcb_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const XcbSurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+    fn_create_xlib_surface: Option<
+        unsafe extern "system" fn(
+            instance: Instance,
+            create_info: *const XlibSurfaceCreateInfo,
+            allocator: AllocationCallbacksRef,
+            surface: *mut Surface,
+        ) -> VkResult,
+    >,
+
     fn_destroy_surface: unsafe extern "system" fn(
         instance: Instance,
         surface: Surface,
         allocator: AllocationCallbacksRef,
     ),
+    fn_enumerate_instance_layer_properties: unsafe extern "system" fn(
+        property_count: *mut u32,
+        properties: *mut LayerProperties,
+    ) -> VkResult,
 }
 
 static FN_TABLE: OnceCell<FnTable> = OnceCell::new();
@@ -87,12 +117,31 @@ impl FnTable {
                         .map(|ptr| *ptr)
                         .ok()
                 },
+                fn_create_wayland_surface: unsafe {
+                    library
+                        .get(CreateWaylandSurface.as_ref())
+                        .map(|ptr| *ptr)
+                        .ok()
+                },
+                fn_create_xcb_surface: unsafe {
+                    library.get(CreateXcbSurface.as_ref()).map(|ptr| *ptr).ok()
+                },
+                fn_create_xlib_surface: unsafe {
+                    library.get(CreateXlibSurface.as_ref()).map(|ptr| *ptr).ok()
+                },
                 fn_destroy_surface: unsafe {
                     *library.get(DestroySurface.as_ref()).map_err(|_| {
                         VulkanErrorKind::FunctionLoadFailed {
                             name: DestroySurface,
                         }
                     })?
+                },
+                fn_enumerate_instance_layer_properties: unsafe {
+                    *library
+                        .get(EnumerateInstanceLayerProperties.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: EnumerateInstanceLayerProperties,
+                        })?
                 },
                 library: Some(library),
             }),
@@ -144,6 +193,68 @@ impl FnTable {
     }
 
     #[inline]
+    pub(crate) unsafe fn create_wayland_surface(
+        &self,
+        instance: Instance,
+        create_info: &WaylandSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_wayland_surface) = self.fn_create_wayland_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateWaylandSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe {
+            (fn_create_wayland_surface)(instance, create_info, allocator, surface.as_mut_ptr())
+        }
+        .into_result(CreateWaylandSurface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn create_xcb_surface(
+        &self,
+        instance: Instance,
+        create_info: &XcbSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_xcb_surface) = self.fn_create_xcb_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateXcbSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe { (fn_create_xcb_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
+            .into_result(CreateXcbSurface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
+    pub(crate) unsafe fn create_xlib_surface(
+        &self,
+        instance: Instance,
+        create_info: &XlibSurfaceCreateInfo,
+        allocator: AllocationCallbacksRef,
+    ) -> super::Result<Surface> {
+        let Some(fn_create_xlib_surface) = self.fn_create_xlib_surface else {
+            return VulkanErrorKind::FunctionLoadFailed {
+                name: CreateXlibSurface,
+            }
+            .into_result();
+        };
+
+        let mut surface = MaybeUninit::<Surface>::uninit();
+
+        unsafe { (fn_create_xlib_surface)(instance, create_info, allocator, surface.as_mut_ptr()) }
+            .into_result(CreateXlibSurface, || unsafe { surface.assume_init() })
+    }
+
+    #[inline]
     pub(crate) unsafe fn destroy_surface(
         &self,
         instance: Instance,
@@ -151,6 +262,16 @@ impl FnTable {
         allocator: AllocationCallbacksRef,
     ) {
         unsafe { (self.fn_destroy_surface)(instance, surface, allocator) }
+    }
+
+    #[inline]
+    pub(crate) unsafe fn enumerate_instance_layer_properties(
+        &self,
+        property_count: &mut u32,
+        properties: *mut LayerProperties,
+    ) -> super::Result<()> {
+        unsafe { (self.fn_enumerate_instance_layer_properties)(property_count, properties) }
+            .into_result(EnumerateInstanceLayerProperties, || ())
     }
 }
 
