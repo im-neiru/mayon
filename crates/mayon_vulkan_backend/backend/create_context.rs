@@ -84,7 +84,7 @@ where
         mayon_core::info!(
             instance.logger(),
             mayon_core::logger::Target::Backend,
-            "Created surface: {:#?}",
+            "Created surface: {:?}",
             surface
         );
 
