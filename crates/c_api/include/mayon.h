@@ -9,7 +9,8 @@
 /**
  * Numeric result codes returned by Mayon C API functions.
  *
- * The value layout is implementation-defined but stable.
+ * The value layout is implementation-defined and NOT stable yet.
+ * It will change because it is in the development stage.
  * Applications should compare against the named constants.
  */
 enum MynFallibleResult
