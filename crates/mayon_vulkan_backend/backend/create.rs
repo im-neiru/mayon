@@ -12,7 +12,10 @@ use utils::{BufferOverflowError, InlineVec};
 use crate::{
     VulkanBackend, VulkanError,
     backend::FnTable,
-    types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
+    types::{
+        AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo, LayerName,
+        LayerProperties,
+    },
 };
 
 impl<'s, L, A> CreateBackend<'s, A, L> for VulkanBackend<'static, L, A>
@@ -328,4 +331,32 @@ fn append_extension_names<const CAPACITY: usize>(
     }
 
     Ok(())
+}
+
+fn select_available_layers<const N: usize>(
+    fns: &FnTable,
+    requested_layers: [LayerName; N],
+) -> Result<InlineVec<LayerName, N>, VulkanError> {
+    const CHUNK_SIZE: usize = 64;
+    let mut available_layers = InlineVec::<LayerName, N>::new();
+    let mut buf_props = LayerProperties::zeroized::<CHUNK_SIZE>();
+
+    let mut count = CHUNK_SIZE as u32;
+
+    unsafe {
+        fns.enumerate_instance_layer_properties(&mut count, buf_props.as_mut_ptr())?;
+    }
+
+    let actual_count = (count as usize).min(CHUNK_SIZE);
+
+    for property in &buf_props[..actual_count] {
+        for &requested in &requested_layers {
+            if requested == property.layer_name {
+                let _ = available_layers.push(requested);
+                break;
+            }
+        }
+    }
+
+    Ok(available_layers)
 }
