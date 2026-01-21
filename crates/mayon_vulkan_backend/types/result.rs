@@ -1,6 +1,5 @@
 use core::mem::transmute;
 
-#[cfg(feature = "error_location")]
 use crate::VulkanFunctionName;
 use crate::{Result, VulkanError, VulkanErrorKind::FunctionReturn};
 
