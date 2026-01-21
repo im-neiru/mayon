@@ -20,6 +20,7 @@ where
     window_state: Option<WindowState<'a, L, A>>,
 }
 
+#[allow(unused)]
 struct WindowState<'a, L, A = System>
 where
     L: Logger,

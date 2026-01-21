@@ -19,7 +19,7 @@ where
             let fns = FnTable::global().unwrap();
 
             let vk_instance = instance.backend().instance();
-            let vk_allocator = unsafe { instance.backend().allocator() };
+            let vk_allocator = instance.backend().allocator();
 
             fns.destroy_surface(vk_instance, self.surface, vk_allocator);
         }

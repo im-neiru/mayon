@@ -14,7 +14,7 @@ use inner::ArcInner;
 
 pub use inner::InstanceRef;
 
-pub struct Instance<B, L = DefaultLogger, A = System>(ArcInner<B, L, A>)
+pub struct Instance<B, L = DefaultLogger, A = System>(#[allow(unused)] ArcInner<B, L, A>)
 where
     B: Backend,
     L: Logger,
