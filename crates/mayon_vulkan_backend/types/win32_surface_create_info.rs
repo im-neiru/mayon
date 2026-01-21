@@ -25,7 +25,7 @@ impl Win32SurfaceCreateInfo<'_> {
         Self {
             structure_type: StructureType::Win32SurfaceCreateInfoKhr,
             next: None,
-            flags: super::Win32SurfaceCreateFlags::EMPTY,
+            flags: super::Win32SurfaceCreateFlags::EMPTY, // super is is needed to silence error on the parent module
             hinstance,
             hwnd,
             _marker: PhantomData,
