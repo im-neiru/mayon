@@ -5,7 +5,7 @@ use core::{
 };
 
 #[repr(transparent)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq)]
 pub(crate) struct LayerName(NonNull<c_char>);
 
 impl LayerName {
@@ -22,5 +22,32 @@ impl fmt::Debug for LayerName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let c_str = unsafe { CStr::from_ptr(self.0.as_ptr()) };
         write!(f, "{}", c_str.to_string_lossy())
+    }
+}
+
+impl PartialEq for LayerName {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        let mut left = self.0.as_ptr();
+        let mut right = other.0.as_ptr();
+
+        if left == right {
+            return true;
+        }
+
+        unsafe {
+            loop {
+                if left.read() == 0 {
+                    return true;
+                }
+
+                if left.read() != right.read() {
+                    return false;
+                }
+
+                left = left.add(1);
+                right = right.add(1);
+            }
+        }
     }
 }
