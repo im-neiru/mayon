@@ -64,7 +64,22 @@ where
         let application_info = ApplicationInfo::new(params);
 
         #[cfg(debug_assertions)]
-        let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
+        let layers = {
+            let layers = select_available_layers(fns, [LayerName::VALIDATION])?;
+
+            if layers.is_empty() {
+                info!(logger, LogTarget::Backend, "Vulkan layers not found");
+            } else {
+                info!(
+                    logger,
+                    LogTarget::Backend,
+                    "Vulkan layers found: {:?}",
+                    layers
+                );
+            }
+
+            layers
+        };
         #[cfg(not(debug_assertions))]
         let layers = [];
 
@@ -75,7 +90,8 @@ where
                 .expect("Vulkan extension name buffer overflow");
         }
 
-        let info = InstanceCreateInfo::new(&application_info, &layers, extensions.as_slice());
+        let info =
+            InstanceCreateInfo::new(&application_info, layers.as_slice(), extensions.as_slice());
 
         let allocation_callbacks = AllocationCallbacks::new(unsafe {
             NonNull::new_unchecked((allocator as *const A).cast_mut())

@@ -4,7 +4,7 @@ use core::{
 };
 use std::ptr::null;
 
-use super::{ApplicationInfo, ExtensionName, StructureType};
+use super::{ApplicationInfo, ExtensionName, LayerName, StructureType};
 
 #[repr(C)]
 pub(crate) struct InstanceCreateInfo<'a> {
@@ -13,7 +13,7 @@ pub(crate) struct InstanceCreateInfo<'a> {
     pub flags: InstanceCreateFlags,
     pub application_info: *const ApplicationInfo<'a>,
     pub enabled_layer_count: u32,
-    pub enabled_layer_names: *const *const c_char,
+    pub enabled_layer_names: *const LayerName,
     pub enabled_extension_count: u32,
     pub enabled_extension_names: *const ExtensionName,
     pub _marker: PhantomData<&'a ()>,
@@ -48,7 +48,7 @@ impl<'a> InstanceCreateInfo<'a> {
     /// ```
     pub fn new(
         application_info: &'a ApplicationInfo,
-        layer_names: &'a [*const c_char],
+        layer_names: &'a [LayerName],
         extension_names: &'a [ExtensionName],
     ) -> Self {
         Self {
