@@ -31,6 +31,8 @@ impl PartialEq for LayerName {
         let mut left = self.0.as_ptr();
         let mut right = other.0.as_ptr();
 
+        // Skip pointer optimization in tests to force manual string comparison.
+        #[cfg(not(test))]
         if left == right {
             return true;
         }
@@ -49,5 +51,21 @@ impl PartialEq for LayerName {
                 right = right.add(1);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_layer_name_eq() {
+        let name1 = LayerName::new(c"VK_LAYER_KHRONOS_validation");
+        let name2 = LayerName::new(c"VK_LAYER_KHRONOS_validation");
+        let name3 = LayerName::new(c"VK_LAYER_LUNARG_api_dump");
+
+        assert_eq!(name1, name2);
+        assert_eq!(name1, LayerName::VALIDATION);
+        assert_ne!(name1, name3);
     }
 }
