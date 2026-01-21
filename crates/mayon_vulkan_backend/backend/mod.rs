@@ -11,7 +11,7 @@ use crate::{fn_table::FnTable, types};
 pub struct VulkanBackend<'a, L, A = System>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     instance: types::Instance,
     alloc: types::AllocationCallbacks<'a, A>,
@@ -21,7 +21,7 @@ where
 impl<'a, L, A> VulkanBackend<'a, L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     #[inline(always)]
     pub(crate) fn instance(&self) -> types::Instance {
@@ -37,7 +37,7 @@ where
 impl<'a, L, A> mayon_core::Backend for VulkanBackend<'a, L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     type Context = crate::VulkanContext;
 }
@@ -45,7 +45,7 @@ where
 impl<'a, L, A> Drop for VulkanBackend<'a, L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     fn drop(&mut self) {
         let fns = FnTable::global().expect("Vulkan library is not loaded");

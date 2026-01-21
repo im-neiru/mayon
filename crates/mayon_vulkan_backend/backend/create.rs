@@ -15,10 +15,10 @@ use crate::{
     types::{AllocationCallbacks, ApplicationInfo, ExtensionName, InstanceCreateInfo},
 };
 
-impl<'s, 'b, L, A> CreateBackend<'s, A, L> for VulkanBackend<'b, L, A>
+impl<'s, L, A> CreateBackend<'s, A, L> for VulkanBackend<'static, L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     type Error = VulkanError;
     type Params = VulkanBackendParams<'s>;

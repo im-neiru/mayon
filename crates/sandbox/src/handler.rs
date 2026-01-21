@@ -11,32 +11,32 @@ use mayon::{
     logger::Logger,
 };
 
-pub struct Handler<'a, L, A = System>
+pub struct Handler<L, A = System>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
-    instance: Instance<'a, L, A>,
-    window_state: Option<WindowState<'a, L, A>>,
+    instance: Instance<'static, L, A>,
+    window_state: Option<WindowState<L, A>>,
 }
 
 #[allow(unused)]
-struct WindowState<'a, L, A = System>
+struct WindowState<L, A = System>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     window: Window,
-    context: Context<'a, L, A>,
+    context: Context<'static, L, A>,
 }
 
-impl<'a, L, A> Handler<'a, L, A>
+impl<L, A> Handler<L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     pub fn new(logger: L, allocator: A, event_loop: &EventLoop<()>) -> Self {
-        let instance = Instance::<'a, L, A>::new_in(
+        let instance = Instance::<'static, L, A>::new_in(
             VulkanBackendParams::default()
                 .with_target_from_rwh(Some(event_loop), false)
                 .unwrap()
@@ -55,10 +55,10 @@ where
     }
 }
 
-impl<'a, L, A> ApplicationHandler for Handler<'a, L, A>
+impl<L, A> ApplicationHandler for Handler<L, A>
 where
     L: Logger,
-    A: Allocator,
+    A: Allocator + 'static,
 {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.window_state.is_some() {
