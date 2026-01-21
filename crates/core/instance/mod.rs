@@ -118,7 +118,7 @@ where
     /// This can happen due to incompatible window handles, device loss, or allocation failures.
     #[allow(clippy::type_complexity)]
     pub fn create_context_from_rwh<H>(
-        &mut self,
+        &self,
         handle: &H,
     ) -> Result<
         crate::Context<B, L, A>,

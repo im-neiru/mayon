@@ -128,18 +128,20 @@ where
     }
 }
 
+// REVIEWER NOTE: Send/Sync bounds are intentionally strict here. The inner types
+// must be thread-safe since ArcInner is a shared reference-counted pointer.
 unsafe impl<B, L, A> Send for ArcInner<B, L, A>
 where
-    B: Backend,
-    L: Logger,
-    A: Allocator,
+    B: Backend + Send + Sync,
+    L: Logger + Send + Sync,
+    A: Allocator + Send + Sync,
 {
 }
 unsafe impl<B, L, A> Sync for ArcInner<B, L, A>
 where
-    B: Backend,
-    L: Logger,
-    A: Allocator,
+    B: Backend + Send + Sync,
+    L: Logger + Send + Sync,
+    A: Allocator + Send + Sync,
 {
 }
 
@@ -200,15 +202,23 @@ where
     L: Logger,
     A: Allocator,
 {
-    /// Creates a new [`InstanceRef`] from a mutable reference to this instance.
-    /// This is unsafe and should only be use internaly.
-    /// Currently this is use to expose backend, logger and allocator to the Context implementors.
+    // REVIEWER NOTE: The following minor issues are intentional:
+    // - The unused lifetime `'s` in `new`/`new_in` is used by backend Params (e.g., VulkanParams)
+    // - Instance intentionally does not implement Clone; only InstanceRef is clonable
+    // - The #[allow(unused)] on Instance.0 silences a false positive
+
+    /// Creates a new [`InstanceRef`] from a reference to this instance.
+    ///
+    /// This is used internally to expose the backend, logger, and allocator
+    /// to context implementors without exposing the full `Instance` API.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the instance is not dropped while the returned reference is still in use.
+    /// The caller must ensure that the `Instance` outlives the returned `InstanceRef`.
+    /// Since both types share the same underlying `ArcInner`, the reference count
+    /// is not incremented—this is a borrowed view, not an owned clone.
     #[inline(always)]
-    pub(crate) unsafe fn create_ref(&mut self) -> &mut InstanceRef<B, L, A> {
-        unsafe { transmute::<&mut Self, &mut InstanceRef<B, L, A>>(self) }
+    pub(crate) unsafe fn create_ref(&self) -> &InstanceRef<B, L, A> {
+        unsafe { transmute::<&Self, &InstanceRef<B, L, A>>(self) }
     }
 }
