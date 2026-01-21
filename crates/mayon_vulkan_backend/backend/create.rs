@@ -59,7 +59,12 @@ where
         let fns = FnTable::global()?;
 
         let application_info = ApplicationInfo::new(params);
+
+        #[cfg(debug_assertions)]
         let layers = [c"VK_LAYER_KHRONOS_validation".as_ptr()];
+        #[cfg(not(debug_assertions))]
+        let layers = [];
+
         let mut extensions = InlineVec::<ExtensionName, 12>::new();
 
         if let Some(target_platform) = params.target_platform {
