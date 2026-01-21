@@ -19,6 +19,7 @@ where
     A: Allocator,
 {
     type Error = VulkanError;
+
     fn create_context_from_rwh<H>(
         instance: &mayon_core::InstanceRef<Self, L, A>,
         handle: &H,
@@ -72,7 +73,7 @@ where
             ) => unsafe {
                 fns.create_xlib_surface(
                     vk_instance,
-                    &XlibSurfaceCreateInfo::from_handle(&display_handle, &window_handle),
+                    &XlibSurfaceCreateInfo::try_from_handle(&display_handle, &window_handle)?,
                     alloc_callbacks,
                 )?
             },
