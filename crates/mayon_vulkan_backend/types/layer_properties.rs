@@ -6,10 +6,10 @@ const MAX_DESCRIPTION_SIZE: usize = 256;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct LayerProperties {
-    pub(super) layer_name: [c_char; MAX_EXTENSION_NAME_SIZE],
-    pub(super) spec_version: u32,
-    pub(super) implementation_version: u32,
-    pub(super) description: [c_char; MAX_DESCRIPTION_SIZE],
+    pub(crate) layer_name: [c_char; MAX_EXTENSION_NAME_SIZE],
+    pub(crate) spec_version: u32,
+    pub(crate) implementation_version: u32,
+    pub(crate) description: [c_char; MAX_DESCRIPTION_SIZE],
 }
 
 impl LayerProperties {
