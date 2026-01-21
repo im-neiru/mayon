@@ -16,6 +16,8 @@ pub enum VulkanFunctionName {
     CreateXlibSurface,
     #[strum(serialize = "vkDestroySurfaceKHR")]
     DestroySurface,
+    #[strum(serialize = "vkEnumerateInstanceLayerProperties")]
+    EnumerateInstanceLayerProperties,
 }
 
 impl AsRef<str> for VulkanFunctionName {
