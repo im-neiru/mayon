@@ -13,7 +13,7 @@ use VulkanFunctionName::*;
 use crate::{
     VulkanErrorKind,
     types::{
-        AllocationCallbacksRef, Instance, InstanceCreateInfo, Surface, VkResult,
+        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, Surface, VkResult,
         WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
         XlibSurfaceCreateInfo,
     },
@@ -70,6 +70,10 @@ pub struct FnTable {
         surface: Surface,
         allocator: AllocationCallbacksRef,
     ),
+    fn_enumerate_instance_layer_properties: unsafe extern "system" fn(
+        property_count: *mut u32,
+        properties: *mut LayerProperties,
+    ) -> VkResult,
 }
 
 static FN_TABLE: OnceCell<FnTable> = OnceCell::new();
@@ -131,6 +135,13 @@ impl FnTable {
                             name: DestroySurface,
                         }
                     })?
+                },
+                fn_enumerate_instance_layer_properties: unsafe {
+                    *library
+                        .get(EnumerateInstanceLayerProperties.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: EnumerateInstanceLayerProperties,
+                        })?
                 },
                 library: Some(library),
             }),
@@ -251,6 +262,16 @@ impl FnTable {
         allocator: AllocationCallbacksRef,
     ) {
         unsafe { (self.fn_destroy_surface)(instance, surface, allocator) }
+    }
+
+    #[inline]
+    pub(crate) unsafe fn enumerate_instance_layer_properties(
+        &self,
+        property_count: &mut u32,
+        properties: *mut LayerProperties,
+    ) -> super::Result<()> {
+        unsafe { (self.fn_enumerate_instance_layer_properties)(property_count, properties) }
+            .into_result(EnumerateInstanceLayerProperties, || ())
     }
 }
 
