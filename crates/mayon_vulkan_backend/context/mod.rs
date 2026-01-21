@@ -16,7 +16,7 @@ where
 {
     fn destroy(&self, instance: &InstanceRef<VulkanBackend<'a, L, A>, L, A>) {
         unsafe {
-            let fns = FnTable::global().unwrap();
+            let fns = FnTable::global().expect("Vulkan library is not loaded");
 
             let vk_instance = instance.backend().instance();
             let vk_allocator = instance.backend().allocator();

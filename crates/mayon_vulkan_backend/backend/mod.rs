@@ -48,7 +48,7 @@ where
     A: Allocator,
 {
     fn drop(&mut self) {
-        let fns = FnTable::global().unwrap();
+        let fns = FnTable::global().expect("Vulkan library is not loaded");
 
         unsafe {
             fns.destroy_instance(self.instance, self.alloc.alloc_ref());
