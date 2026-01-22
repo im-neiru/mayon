@@ -1,5 +1,6 @@
 mod allocation_callbacks;
 mod application_info;
+mod bool32;
 mod extensions_name;
 mod handles;
 mod instance_create_info;
@@ -15,6 +16,7 @@ mod xlib_surface_create_info;
 
 pub(super) use allocation_callbacks::*;
 pub(super) use application_info::ApplicationInfo;
+pub(super) use bool32::Bool32;
 pub(super) use extensions_name::ExtensionName;
 pub(super) use handles::*;
 pub(super) use instance_create_info::InstanceCreateInfo;
