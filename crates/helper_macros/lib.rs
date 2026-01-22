@@ -39,7 +39,7 @@ pub fn vk_handle(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         #[repr(transparent)]
-        #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+        #[derive(Copy, Eq)]
         #item_struct
 
         impl #name {
@@ -60,6 +60,44 @@ pub fn vk_handle(attr: TokenStream, item: TokenStream) -> TokenStream {
             #[inline]
             pub const fn as_raw(self) -> #raw_type {
                 self.0.get()
+            }
+        }
+
+        impl Clone for #name {
+            #[inline]
+            fn clone(&self) -> Self {
+                *self
+            }
+        }
+
+        impl core::hash::Hash for #name {
+            #[inline]
+            fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+                self.0.hash(state);
+            }
+        }
+
+        impl core::ops::Deref for #name {
+            type Target = #raw_type;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                unsafe { &*(&self.0 as *const #nonzero_type as *const Self::Target) }
+            }
+        }
+
+        impl core::cmp::PartialEq<#name> for #name {
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+
+        impl core::cmp::PartialEq<#raw_type> for #name {
+
+            #[inline]
+            fn eq(&self, other: &#raw_type) -> bool {
+                self.0.get() == *other
             }
         }
 
