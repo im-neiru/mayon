@@ -13,8 +13,8 @@ use VulkanFunctionName::*;
 use crate::{
     VulkanErrorKind,
     types::{
-        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, Surface, VkResult,
-        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
+        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, PhysicalDevice,
+        Surface, VkResult, WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
         XlibSurfaceCreateInfo,
     },
 };
@@ -70,9 +70,16 @@ pub struct FnTable {
         surface: Surface,
         allocator: AllocationCallbacksRef,
     ),
+
     fn_enumerate_instance_layer_properties: unsafe extern "system" fn(
         property_count: *mut u32,
         properties: *mut LayerProperties,
+    ) -> VkResult,
+
+    fn_enumerate_physical_devices: unsafe extern "system" fn(
+        instance: Instance,
+        physical_device_count: *mut u32,
+        physical_devices: *mut PhysicalDevice,
     ) -> VkResult,
 }
 
@@ -141,6 +148,13 @@ impl FnTable {
                         .get(EnumerateInstanceLayerProperties.as_ref())
                         .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
                             name: EnumerateInstanceLayerProperties,
+                        })?
+                },
+                fn_enumerate_physical_devices: unsafe {
+                    *library
+                        .get(EnumeratePhysicalDevices.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: EnumeratePhysicalDevices,
                         })?
                 },
                 library: Some(library),
@@ -272,6 +286,19 @@ impl FnTable {
     ) -> super::Result<()> {
         unsafe { (self.fn_enumerate_instance_layer_properties)(property_count, properties) }
             .into_result(EnumerateInstanceLayerProperties, || ())
+    }
+
+    #[inline]
+    pub(crate) unsafe fn enumerate_physical_devices(
+        &self,
+        instance: Instance,
+        physical_device_count: &mut u32,
+        physical_devices: *mut PhysicalDevice,
+    ) -> super::Result<()> {
+        unsafe {
+            (self.fn_enumerate_physical_devices)(instance, physical_device_count, physical_devices)
+        }
+        .into_result(EnumeratePhysicalDevices, || ())
     }
 }
 
