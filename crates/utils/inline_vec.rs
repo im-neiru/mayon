@@ -140,6 +140,45 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     pub const fn as_slice(&self) -> &[T] {
         unsafe { slice::from_raw_parts(self.array.as_ptr().cast(), self.length) }
     }
+
+    /// Forcefully sets the length of the vector to `length`.
+    ///
+    /// If `length` exceeds the `CAPACITY`, the length is capped at `CAPACITY` and the amount that
+    /// exceeded the capacity is returned as "excess". If `length <= CAPACITY`, the excess is 0.
+    ///
+    /// This is particularly useful for FFI patterns (like Vulkan) where a function reports the
+    /// total number of available elements, allowing the caller to know if their buffer was too small.
+    ///
+    /// # Returns
+    ///
+    /// The number of elements that could not fit (zero if all fit).
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that:
+    /// - All elements in the range `0..min(length, CAPACITY)` are properly initialized.
+    /// - If the new length is smaller than the previous length, the caller is responsible for
+    ///   dropping the "removed" elements if they are not trivially droppable.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use utils::InlineVec;
+    ///
+    /// let mut v: InlineVec<u32, 2> = InlineVec::new();
+    /// // Logic: we want to set length to 5, but capacity is 2.
+    /// let excess = unsafe { v.set_length(5) };
+    /// assert_eq!(v.length(), 2);
+    /// assert_eq!(excess, 3); // 5 - 2 = 3
+    /// ```
+    #[inline]
+    pub unsafe fn set_length(&mut self, length: usize) -> usize {
+        let excess = length.saturating_sub(CAPACITY);
+
+        self.length = length.min(CAPACITY);
+
+        excess
+    }
 }
 
 impl<T, const CAPACITY: usize> Index<usize> for InlineVec<T, CAPACITY> {
