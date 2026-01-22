@@ -8,3 +8,9 @@ raw-window-handle = "0.6.2"
 winit = "0.30.12"
 strum = { version = "0.27.2", features = ["derive"] }
 thiserror = "2.0.17"
+
+# macro crates
+
+syn = "2.0.114"
+quote = "1.0.43"
+proc-macro2 = "1.0.106"
