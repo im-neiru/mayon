@@ -10,14 +10,7 @@ use once_cell::sync::OnceCell;
 
 use VulkanFunctionName::*;
 
-use crate::{
-    VulkanErrorKind,
-    types::{
-        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, PhysicalDevice,
-        Surface, VkResult, WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
-        XlibSurfaceCreateInfo,
-    },
-};
+use crate::{VulkanErrorKind, types::*};
 
 pub struct FnTable {
     library: Option<Library>,
@@ -80,6 +73,12 @@ pub struct FnTable {
         instance: Instance,
         physical_device_count: *mut u32,
         physical_devices: *mut PhysicalDevice,
+    ) -> VkResult,
+
+    fn_get_physical_device_queue_family_properties: unsafe extern "system" fn(
+        physical_device: PhysicalDevice,
+        queue_family_property_count: *mut u32,
+        queue_family_properties: *mut QueueFamilyProperties,
     ) -> VkResult,
 }
 
@@ -157,8 +156,16 @@ impl FnTable {
                             name: EnumeratePhysicalDevices,
                         })?
                 },
+                fn_get_physical_device_queue_family_properties: unsafe {
+                    *library
+                        .get(GetPhysicalDeviceQueueFamilyProperties.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: GetPhysicalDeviceQueueFamilyProperties,
+                        })?
+                },
                 library: Some(library),
             }),
+
             Err(_) => VulkanErrorKind::LibraryLoad.into_result(),
         }
     }
@@ -299,6 +306,23 @@ impl FnTable {
             (self.fn_enumerate_physical_devices)(instance, physical_device_count, physical_devices)
         }
         .into_result(EnumeratePhysicalDevices, || ())
+    }
+
+    #[inline]
+    pub(crate) unsafe fn get_physical_device_queue_family_properties(
+        &self,
+        physical_device: PhysicalDevice,
+        queue_family_property_count: &mut u32,
+        queue_family_properties: *mut QueueFamilyProperties,
+    ) -> super::Result<()> {
+        unsafe {
+            (self.fn_get_physical_device_queue_family_properties)(
+                physical_device,
+                queue_family_property_count,
+                queue_family_properties,
+            )
+        }
+        .into_result(GetPhysicalDeviceQueueFamilyProperties, || ())
     }
 }
 

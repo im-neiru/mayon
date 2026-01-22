@@ -20,6 +20,8 @@ pub enum VulkanFunctionName {
     EnumerateInstanceLayerProperties,
     #[strum(serialize = "vkEnumeratePhysicalDevices")]
     EnumeratePhysicalDevices,
+    #[strum(serialize = "vkGetPhysicalDeviceQueueFamilyProperties")]
+    GetPhysicalDeviceQueueFamilyProperties,
 }
 
 impl AsRef<str> for VulkanFunctionName {
