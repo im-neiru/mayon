@@ -1,24 +1,10 @@
-use core::{
-    fmt::{self, Debug, Formatter},
-    num::NonZeroUsize,
-};
+use helper_macros::vk_handle;
 
-#[repr(transparent)]
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub struct Instance(NonZeroUsize);
+#[vk_handle]
+pub struct Instance;
 
-impl Debug for Instance {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Instance({:#x})", self.0.get())
-    }
-}
+#[vk_handle]
+pub struct Surface;
 
-#[repr(transparent)]
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub struct Surface(NonZeroUsize);
-
-impl Debug for Surface {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Surface({:#x})", self.0.get())
-    }
-}
+#[vk_handle]
+pub struct PhysicalDevice;
