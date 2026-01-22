@@ -18,6 +18,12 @@ pub enum VulkanFunctionName {
     DestroySurface,
     #[strum(serialize = "vkEnumerateInstanceLayerProperties")]
     EnumerateInstanceLayerProperties,
+    #[strum(serialize = "vkEnumeratePhysicalDevices")]
+    EnumeratePhysicalDevices,
+    #[strum(serialize = "vkGetPhysicalDeviceQueueFamilyProperties")]
+    GetPhysicalDeviceQueueFamilyProperties,
+    #[strum(serialize = "vkGetPhysicalDeviceSurfaceSupportKHR")]
+    GetPhysicalDeviceSurfaceSupport,
 }
 
 impl AsRef<str> for VulkanFunctionName {

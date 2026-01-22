@@ -10,14 +10,7 @@ use once_cell::sync::OnceCell;
 
 use VulkanFunctionName::*;
 
-use crate::{
-    VulkanErrorKind,
-    types::{
-        AllocationCallbacksRef, Instance, InstanceCreateInfo, LayerProperties, Surface, VkResult,
-        WaylandSurfaceCreateInfo, Win32SurfaceCreateInfo, XcbSurfaceCreateInfo,
-        XlibSurfaceCreateInfo,
-    },
-};
+use crate::{VulkanErrorKind, types::*};
 
 pub struct FnTable {
     library: Option<Library>,
@@ -70,9 +63,29 @@ pub struct FnTable {
         surface: Surface,
         allocator: AllocationCallbacksRef,
     ),
+
     fn_enumerate_instance_layer_properties: unsafe extern "system" fn(
         property_count: *mut u32,
         properties: *mut LayerProperties,
+    ) -> VkResult,
+
+    fn_enumerate_physical_devices: unsafe extern "system" fn(
+        instance: Instance,
+        physical_device_count: *mut u32,
+        physical_devices: *mut PhysicalDevice,
+    ) -> VkResult,
+
+    fn_get_physical_device_queue_family_properties: unsafe extern "system" fn(
+        physical_device: PhysicalDevice,
+        queue_family_property_count: *mut u32,
+        queue_family_properties: *mut QueueFamilyProperties,
+    ) -> VkResult,
+
+    fn_get_physical_device_surface_support: unsafe extern "system" fn(
+        physical_device: PhysicalDevice,
+        queue_family_index: u32,
+        surface: Surface,
+        supported: *mut Bool32,
     ) -> VkResult,
 }
 
@@ -143,8 +156,30 @@ impl FnTable {
                             name: EnumerateInstanceLayerProperties,
                         })?
                 },
+                fn_enumerate_physical_devices: unsafe {
+                    *library
+                        .get(EnumeratePhysicalDevices.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: EnumeratePhysicalDevices,
+                        })?
+                },
+                fn_get_physical_device_queue_family_properties: unsafe {
+                    *library
+                        .get(GetPhysicalDeviceQueueFamilyProperties.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: GetPhysicalDeviceQueueFamilyProperties,
+                        })?
+                },
+                fn_get_physical_device_surface_support: unsafe {
+                    *library
+                        .get(GetPhysicalDeviceSurfaceSupport.as_ref())
+                        .map_err(|_| VulkanErrorKind::FunctionLoadFailed {
+                            name: GetPhysicalDeviceSurfaceSupport,
+                        })?
+                },
                 library: Some(library),
             }),
+
             Err(_) => VulkanErrorKind::LibraryLoad.into_result(),
         }
     }
@@ -272,6 +307,56 @@ impl FnTable {
     ) -> super::Result<()> {
         unsafe { (self.fn_enumerate_instance_layer_properties)(property_count, properties) }
             .into_result(EnumerateInstanceLayerProperties, || ())
+    }
+
+    #[inline]
+    pub(crate) unsafe fn enumerate_physical_devices(
+        &self,
+        instance: Instance,
+        physical_device_count: &mut u32,
+        physical_devices: *mut PhysicalDevice,
+    ) -> super::Result<()> {
+        unsafe {
+            (self.fn_enumerate_physical_devices)(instance, physical_device_count, physical_devices)
+        }
+        .into_result(EnumeratePhysicalDevices, || ())
+    }
+
+    #[inline]
+    pub(crate) unsafe fn get_physical_device_queue_family_properties(
+        &self,
+        physical_device: PhysicalDevice,
+        queue_family_property_count: &mut u32,
+        queue_family_properties: *mut QueueFamilyProperties,
+    ) -> super::Result<()> {
+        unsafe {
+            (self.fn_get_physical_device_queue_family_properties)(
+                physical_device,
+                queue_family_property_count,
+                queue_family_properties,
+            )
+        }
+        .into_result(GetPhysicalDeviceQueueFamilyProperties, || ())
+    }
+
+    #[inline]
+    pub(crate) unsafe fn get_physical_device_surface_support(
+        &self,
+        physical_device: PhysicalDevice,
+        queue_family_index: u32,
+        surface: Surface,
+    ) -> super::Result<bool> {
+        let mut supported = Bool32::False;
+
+        unsafe {
+            (self.fn_get_physical_device_surface_support)(
+                physical_device,
+                queue_family_index,
+                surface,
+                &mut supported,
+            )
+        }
+        .into_result(GetPhysicalDeviceSurfaceSupport, || supported.into())
     }
 }
 
