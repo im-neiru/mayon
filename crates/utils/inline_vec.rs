@@ -49,7 +49,7 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// ```
     #[inline]
     pub fn from_array<const SIZE: usize>(value: [T; SIZE]) -> Result<Self, BufferOverflowError> {
-        if SIZE <= CAPACITY {
+        if SIZE > CAPACITY {
             return Err(BufferOverflowError);
         }
 
@@ -119,6 +119,16 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
         self.length
     }
 
+    /// Returns `true` if the `InlineVec` contains no initialized elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use utils::InlineVec;
+    ///
+    /// let v: InlineVec<i32, 4> = InlineVec::new();
+    /// assert!(v.is_empty());
+    /// ```
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.length == 0
@@ -133,7 +143,7 @@ impl<T, const CAPACITY: usize> InlineVec<T, CAPACITY> {
     /// ```
     /// # use utils::InlineVec;
     ///
-    /// let v = InlineVec::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = InlineVec::<u32, 3>::from_array([1, 2, 3]).unwrap();
     /// assert_eq!(v.as_slice(), &[1, 2, 3]);
     /// ```
     #[inline]
@@ -197,7 +207,7 @@ impl<T, const CAPACITY: usize> Index<usize> for InlineVec<T, CAPACITY> {
     /// ```
     /// # use utils::InlineVec;
     ///
-    /// let v = InlineVec::<i32, 3>::from_array([10, 20, 30]);
+    /// let v = InlineVec::<i32, 3>::from_array([10, 20, 30]).unwrap();
     /// assert_eq!(v[1], 20);
     /// ```
     #[inline]
@@ -225,7 +235,7 @@ impl<T, const CAPACITY: usize> IndexMut<usize> for InlineVec<T, CAPACITY> {
     /// ```
     /// # use utils::InlineVec;
     ///
-    /// let mut v = InlineVec::<i32, 3>::from_array([1, 2, 3]);
+    /// let mut v = InlineVec::<i32, 3>::from_array([1, 2, 3]).unwrap();
     /// v[1] += 10;
     /// assert_eq!(v.as_slice(), &[1, 12, 3]);
     /// ```
